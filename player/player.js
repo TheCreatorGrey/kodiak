@@ -1,10 +1,16 @@
 import * as THREE from 'three';
-import { World } from '../world.js';
+import { World, defaultWorld } from '../world.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
+let data;
 const urlParams = new URLSearchParams(window.location.search);
+data = urlParams.get('data');
 
-const world = new World(urlParams.get('data'));
+if (! data) {
+    data = defaultWorld;
+}
+
+const world = new World(data);
 
 //
 
