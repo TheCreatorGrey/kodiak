@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="./assets/icon.ico">
+
+  <title>Kodiak Studio</title>
+  <style>
+    body { margin: 0; background-color: rgb(0, 0, 20); }
+    canvas { display: block; }
+  </style>
+</head>
+<body oncontextmenu="return false;" style="overflow: hidden;">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "../three/build/three.module.js",
+        "three/addons/": "../three/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module" src="studio.js"></script>
+
+  <div style="z-index: 2; position: absolute; font-size: 0; left: 50%; transform: translateX(-50%);">
+    <button id="playbtn" class="menuButton">
+      Play
+    </button>
+
+    <button id="savebtn" class="menuButton">
+      Save
+    </button>
+
+    <button id="loadbtn" class="menuButton">
+      Save
+    </button>
+
+    <button style="background-color: rgba(50, 50, 50, .5);" class="menuButton">Tool:</button>
+    <button  id="movebtn" class="menuButton">Move</button>
+    <button id="scalebtn" class="menuButton">Scale</button>
+    <button id="rotatebtn" class="menuButton">Rotate</button>
+    <button id="delbtn" class="menuButton">Delete</button>
+    <button id="clonebtn" class="menuButton">Duplicate</button>
+
+    <button style="background-color: rgba(50, 50, 50, .5);" class="menuButton">Create:</button>
+    <button id="newpartbutton" class="menuButton">+ New Part</button>
+
+    <button style="background-color: rgba(50, 50, 50, .5);" class="menuButton">Snap:</button>
+    <textarea class="menuButton" style="height: 24px; width: 50px;" id="snap-input"></textarea>
+  </div>
+
+  <div style="z-index: 100; position: absolute; right: 0; top: 0; width: 200px; height: 100%; background-color: rgba(0, 0, 0, .5); overflow-y: auto; display: none; padding-right: 10px;" id="sidebar">
+    <div class="sidebarSection headerSection">Transform:</div>
+
+    <div class="sidebarSection">Position:</div>
+    <div class="sidebarSection subSection">
+      <span>
+        x: <textarea id="input-pos-x" cols="3" rows="1"></textarea>
+        y: <textarea id="input-pos-y" cols="3" rows="1"></textarea>
+        z: <textarea id="input-pos-z" cols="3" rows="1"></textarea>
+      </span>
+    </div>
+
+    <div class="sidebarSection">Scale:</div>
+    <div class="sidebarSection subSection">
+      <span>
+        x: <textarea id="input-scl-x" cols="3" rows="1"></textarea>
+        y: <textarea id="input-scl-y" cols="3" rows="1"></textarea>
+        z: <textarea id="input-scl-z" cols="3" rows="1"></textarea>
+      </span>
+    </div>
+
+    <div class="sidebarSection">Rotation:</div>
+    <div class="sidebarSection subSection">
+      <span>
+        x: <textarea id="input-ro-x" cols="3" rows="1"></textarea>
+        y: <textarea id="input-ro-y" cols="3" rows="1"></textarea>
+        z: <textarea id="input-ro-z" cols="3" rows="1"></textarea>
+      </span>
+    </div>
+
+    <div class="sidebarSection headerSection">Properties:</div>
+    <div class="sidebarSection">Color:</div>
+    <div class="sidebarSection subSection">
+      <span>
+        r: <textarea id="input-co-r" cols="3" rows="1"></textarea>
+        g: <textarea id="input-co-g" cols="3" rows="1"></textarea>
+        b: <textarea id="input-co-b" cols="3" rows="1"></textarea>
+      </span>
+    </div>
+
+    <div class="sidebarSection">Emissive:</div>
+    <div class="sidebarSection subSection">
+      <span>
+        <input type="checkbox" id="input-em"> Is Emissive
+      </span>
+      <hr>
+      <span>
+        Intensity: <textarea id="input-em-int" cols="3" rows="1"></textarea>
+      </span>
+      <hr>
+      <span>
+        Range: <textarea id="input-em-ran" cols="3" rows="1"></textarea>
+      </span>
+    </div>
+
+    <div class="sidebarSection headerSection">Model:</div>
+    <div id="change-cube" class="sidebarSection">Cube</div>
+    <div id="change-sphere" class="sidebarSection">Sphere</div>
+    <div id="change-cylinder" class="sidebarSection">Cylinder</div>
+    <div id="change-plane" class="sidebarSection">Plane</div>
+    <div id="change-torus" class="sidebarSection">Torus</div>
+    <div id="change-pyramid" class="sidebarSection">Pyramid</div>
+    <div id="change-cone" class="sidebarSection">Cone</div>
+
+    <div class="sidebarSection headerSection">Material:</div>
+    </div>
+  </div>
+
+  <div style="z-index: 100; position: absolute; left: 0; top: 0; width: 200px; height: 100%; background-color: rgba(0, 0, 0, .5); display: none;" id="matIndexContainer">
+    <span><textarea id="matSearchTextarea" style="height: 15px; width: 100px;"></textarea><button id="matSearchBtn" style="height: 20px;">Search</button></span>
+    <div style="overflow-y: auto; height: 100%; width: 100%;" id="matIndexDiv">
+    </div>
+  </div>
+</body>
+</html>
