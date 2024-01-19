@@ -1,15 +1,18 @@
 import * as THREE from 'three';
+import { startScript } from './scripting.js';
 
 export const defaultWorld = "eyJwYXJ0cyI6W3sicG9zaXRpb24iOlszLjEyNSwxLjUsMC41XSwic2NhbGUiOlswLjI1LDIuNSw1LjVdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJicmlja193YWxsXzAwNSIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlswLDAuMjUsMC41XSwic2NhbGUiOls2LDAuNSw1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYnJ1c2hlZF9jb25jcmV0ZV8yIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6WzAsMC42MjUsMC41XSwic2NhbGUiOls2LDAuMjUsNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6InJhd19wbGFua193YWxsIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzUwLDEwLDEwXX0seyJwb3NpdGlvbiI6WzIuODc1LDEuNzUsMC41XSwic2NhbGUiOlswLjI1LDIsNC41XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmVpZ2Vfd2FsbF8wMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjAwLDIwMCwyMDBdfSx7InBvc2l0aW9uIjpbLTIsMi41LDIuODc1XSwic2NhbGUiOlsxLDAuNSwwLjI1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmVpZ2Vfd2FsbF8wMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjAwLDIwMCwyMDBdfSx7InBvc2l0aW9uIjpbMCwzLjYyNSwwLjVdLCJzY2FsZSI6WzUuNSwwLjI1LDQuNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImdyZXlfcm9vZl90aWxlc18wMiIsInR5cGUiOiJjdWJlIiwiY29sb3IiOls1MCwwLDBdfSx7InBvc2l0aW9uIjpbMC43NSwxLjc1LDIuODc1XSwic2NhbGUiOls0LjUsMiwwLjI1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmVpZ2Vfd2FsbF8wMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjAwLDIwMCwyMDBdfSx7InBvc2l0aW9uIjpbMCwxLjc1LC0xLjg3NV0sInNjYWxlIjpbNiwyLDAuMjVdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJiZWlnZV93YWxsXzAwMSIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyMDAsMjAwLDIwMF19LHsicG9zaXRpb24iOlstMi43NSwxLjc1LDIuODc1XSwic2NhbGUiOlswLjUsMiwwLjI1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmVpZ2Vfd2FsbF8wMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjAwLDIwMCwyMDBdfSx7InBvc2l0aW9uIjpbLTIuODc1LDEuNzUsMC41XSwic2NhbGUiOlswLjI1LDIsNC41XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmVpZ2Vfd2FsbF8wMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjAwLDIwMCwyMDBdfSx7InBvc2l0aW9uIjpbLTMuMTI1LDEuNSwwLjVdLCJzY2FsZSI6WzAuMjUsMi41LDUuNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyaWNrX3dhbGxfMDA1IiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6WzAsMS41LC0yLjEyNV0sInNjYWxlIjpbNiwyLjUsMC4yNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyaWNrX3dhbGxfMDA1IiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6WzAuNzUsMS41LDMuMTI1XSwic2NhbGUiOls0LjUsMi41LDAuMjVdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJicmlja193YWxsXzAwNSIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlstMi43NSwxLjUsMy4xMjVdLCJzY2FsZSI6WzAuNSwyLjUsMC4yNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyaWNrX3dhbGxfMDA1IiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6Wy0yLDIuNSwzLjEyNV0sInNjYWxlIjpbMSwwLjUsMC4yNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyaWNrX3dhbGxfMDA1IiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6Wy0yLDAuMTI1LDMuNjI1XSwic2NhbGUiOlsxLDAuMjUsMC4yNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJydXNoZWRfY29uY3JldGUiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjU1LDI1NSwyNTVdfSx7InBvc2l0aW9uIjpbMCwyLjYyNSwwLjVdLCJzY2FsZSI6WzUuNSwwLjI1LDQuNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJlaWdlX3dhbGxfMDAxIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6WzAsMi44NzUsMC41XSwic2NhbGUiOls3LDAuMjUsNl0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImdyZXlfcm9vZl90aWxlc18wMiIsInR5cGUiOiJjdWJlIiwiY29sb3IiOls1MCwwLDBdfSx7InBvc2l0aW9uIjpbMCwzLjEyNSwwLjVdLCJzY2FsZSI6WzYuNSwwLjI1LDUuNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImdyZXlfcm9vZl90aWxlc18wMiIsInR5cGUiOiJjdWJlIiwiY29sb3IiOls1MCwwLDBdfSx7InBvc2l0aW9uIjpbMCwzLjM3NSwwLjVdLCJzY2FsZSI6WzYsMC4yNSw1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiZ3JleV9yb29mX3RpbGVzXzAyIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzUwLDAsMF19LHsicG9zaXRpb24iOlstMiwwLjM3NSwzLjEyNV0sInNjYWxlIjpbMSwwLjc1LDAuMjVdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJicnVzaGVkX2NvbmNyZXRlIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6Wy0yLDAuMjUsMy4zNzVdLCJzY2FsZSI6WzEsMC41LDAuMjVdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJicnVzaGVkX2NvbmNyZXRlIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6WzAsMi4zNzUsMC41XSwic2NhbGUiOlsxLDAuMjUsMV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImRvdWJsZV9icmlja19mbG9vciIsInR5cGUiOiJjeWxpbmRlciIsImNvbG9yIjpbMjU1LDI1NSwxNjBdLCJlbWlzc2l2ZSI6dHJ1ZSwiZW1pc3Npb25JbnRlbnNpdHkiOjMsImVtaXNzaW9uUmFuZ2UiOjEwfV19";
 
 export class World {
-    constructor(data, advancedRendering=true) {
-        this.load(data, advancedRendering)
+    constructor(data, advancedRendering=true, mode='studio') {
+        this.load(data, advancedRendering, mode)
     }
 
-    load(data, advancedRendering=true) {
+    load(data, advancedRendering=true, mode='studio') {
+        this.canvas = document.getElementById('cnv');
+
         this.scene = new THREE.Scene();
-        this.camera = new THREE.PerspectiveCamera(100, window.innerWidth / window.innerHeight, 0.1, 1000000);
+        this.camera = new THREE.PerspectiveCamera(100, this.canvas.clientWidth / this.canvas.clientHeight, 0.1, 1000000);
         this.textureLoader = new THREE.TextureLoader();
         this.clock = new THREE.Clock();
         this.raycaster = new THREE.Raycaster();
@@ -17,28 +20,28 @@ export class World {
         this.renderer = new THREE.WebGLRenderer({
             antialias: false,
             alpha: false,
+            canvas: this.canvas
         });
 
         this.renderer.shadowMap.enabled = true;
 
         const resulution = 1;
-        this.renderer.setSize(window.innerWidth / resulution, window.innerHeight / resulution);
-        this.renderer.domElement.style.width = (this.renderer.domElement.width * resulution) + 'px';
-        this.renderer.domElement.style.height = (this.renderer.domElement.height * resulution) + 'px';
+        this.renderer.setSize(this.canvas.clientWidth / resulution, this.canvas.clientHeight / resulution);
+        //this.renderer.domElement.style.width = (this.renderer.domElement.width * resulution) + 'px';
+        //this.renderer.domElement.style.height = (this.renderer.domElement.height * resulution) + 'px';
         document.body.appendChild(this.renderer.domElement);
+        this.mode = mode;
 
 
         this.camera.position.y = 2;
         this.camera.fov = 70;
         this.camera.updateProjectionMatrix();
 
+        this.skybox = new THREE.Mesh(
+            new THREE.BoxGeometry(100000, 100000, 100000),
+            new THREE.MeshBasicMaterial({color: new THREE.Color('rgb(50, 50, 50)'), side: THREE.BackSide}));
 
-        this.sky = this.textureLoader.load('https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/kloofendal_43d_clear_puresky.jpg');
-        this.sky.mapping = THREE.EquirectangularReflectionMapping;
-        const material = new THREE.MeshBasicMaterial({map: this.sky, side: THREE.BackSide});
-        const geometry = new THREE.SphereGeometry(100000, 64, 64);
-        const mesh = new THREE.Mesh(geometry, material);
-        this.scene.add(mesh);
+        this.scene.add(this.skybox);
 
 
         const sun = new THREE.DirectionalLight(0xFFFDDD, 3);
@@ -49,32 +52,34 @@ export class World {
         sun.shadow.camera.far = 10000;
         this.scene.add(sun);
 
-        const ambient = new THREE.AmbientLight( new THREE.Color(`rgb(100,100,100)`) );
-        this.scene.add(ambient);
+        this.ambient = new THREE.AmbientLight( new THREE.Color(`rgb(50, 50, 50)`) );
+        this.scene.add(this.ambient);
+
+        this.scene.fog = new THREE.FogExp2( new THREE.Color(`rgb(50, 50, 50)`), .05);
 
 
-        const planeGeometry = new THREE.PlaneGeometry(50, 50);
-        const diffuse = this.textureLoader.load(`https://media.discordapp.net/attachments/1043652794374160385/1152635703608475779/Untitled_1.png?width=630&height=630`);
-        diffuse.repeat.set(50, 50);
-        diffuse.wrapS = THREE.RepeatWrapping;
-        diffuse.wrapT = THREE.RepeatWrapping;
-        const planeMaterial = new THREE.MeshPhongMaterial({
-            map: diffuse,
-        });
-        const groundPlane = new THREE.Mesh(planeGeometry, planeMaterial);
-        groundPlane.rotation.x = -Math.PI / 2;
-        this.scene.add(groundPlane);
-
-        groundPlane.receiveShadow = true;
+        //const planeGeometry = new THREE.PlaneGeometry(50, 50);
+        //const diffuse = this.textureLoader.load(`https://media.discordapp.net/attachments/1043652794374160385/1152635703608475779/Untitled_1.png?width=630&height=630`);
+        //diffuse.repeat.set(50, 50);
+        //diffuse.wrapS = THREE.RepeatWrapping;
+        //diffuse.wrapT = THREE.RepeatWrapping;
+        //const planeMaterial = new THREE.MeshPhongMaterial({
+        //    map: diffuse,
+        //});
+        //const groundPlane = new THREE.Mesh(planeGeometry, planeMaterial);
+        //groundPlane.rotation.x = -Math.PI / 2;
+        //this.scene.add(groundPlane);
+        //
+        //groundPlane.receiveShadow = true;
 
         //sun.lookAt(groundPlane.position);
 
 
         window.addEventListener("resize", (event) => {
-            this.camera.aspect = window.innerWidth / window.innerHeight;
+            this.camera.aspect = this.canvas.clientWidth / this.canvas.clientHeight;
             this.camera.updateProjectionMatrix();
 
-            this.renderer.setSize(window.innerWidth, window.innerHeight);
+            this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
         });
 
 
@@ -86,7 +91,31 @@ export class World {
 
         if (data) {
             let parsed = JSON.parse(atob(data));
-            console.log(parsed)
+            parsed.world = {skyColor:[50, 50, 50], studioCamPos:[2, 2, -2, 0, 2.356, 0]}
+            
+            if (parsed.world) {
+                let rawcol = parsed.world.skyColor;
+                let col = new THREE.Color(`rgb(${rawcol[0]},${rawcol[1]},${rawcol[2]})`);
+                this.skybox.material.color = col;
+                this.ambient.color = col;
+                this.scene.fog.color = col;
+
+                if (this.mode = 'studio') {
+                    let studiocampos = parsed.world.studioCamPos;
+
+                    this.camera.position.set(
+                        studiocampos[0],
+                        studiocampos[1],
+                        studiocampos[2]
+                    );
+
+                    this.camera.rotation.set(
+                        studiocampos[3],
+                        studiocampos[4],
+                        studiocampos[5]
+                    );
+                }
+            }
 
             for (let p in parsed.parts) {
                 let part = parsed.parts[p];
@@ -103,6 +132,18 @@ export class World {
                     part.emissionRange
                 )
             }
+
+            if (parsed.scripts) {
+                this.scripts = parsed.scripts;
+            } else {
+                this.scripts = [{syntax:'log str:Hello!', name:'Main'}]
+            }
+        }
+    }
+
+    loadScripts() {
+        for (let sc of this.scripts) {
+            startScript(sc, this)
         }
     }
 
@@ -135,7 +176,7 @@ export class World {
                     normalMap: norm
                 })
             } else {
-                material = new THREE.MeshBasicMaterial({
+                material = new THREE.MeshLambertMaterial({
                     map: diff
                 })
             }
@@ -227,7 +268,7 @@ export class World {
             part.receiveShadow = false;
             part.castShadow = false;
 
-            let col = new THREE.Color(`rgb(${part.material.color.r*255},${part.material.color.g*255},${part.material.color.b*255})`)
+            let col = new THREE.Color(`rgb(${part.material.color.r*255},${part.material.color.g*255},${part.material.color.b*255})`);
 
             part.material = new THREE.MeshBasicMaterial({color:col});
     
@@ -280,7 +321,6 @@ export class World {
 
     async updateUVs(part) {
         if (part) {
-            console.log(part.type)
             if (part.type === "cube") {
                 //left
 
@@ -382,6 +422,6 @@ export class World {
             }
         }
 
-        return {parts: saveParts};
+        return {parts: saveParts, scripts:this.scripts};
     }
 }

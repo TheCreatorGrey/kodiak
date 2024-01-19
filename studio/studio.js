@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { World, defaultWorld } from '../world.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
-let data;
-const urlParams = new URLSearchParams(window.location.search);
-data = urlParams.get('data');
+let data = sessionStorage.getItem('world')
 
 if (! data) {
     data = defaultWorld;
+} else {
+    sessionStorage.removeItem('world')
 }
 
 const world = new World(data, false);
@@ -24,11 +24,37 @@ var pressedKeys = {};
 window.onkeyup = function (e) { pressedKeys[e.key] = false; }
 window.onkeydown = function (e) { pressedKeys[e.key] = true; }
 
+world.renderer.domElement.classList.add('studioCanvas');
+
+for (let i = 0; i <= 50; i++) {
+    document.getElementById('scriptEditorLineDisplay').innerHTML += `
+    ${i}<br>
+    `
+}
+
+for (let s of world.scripts) {
+    document.getElementById('scriptBtnDisplay').innerHTML += `
+    <button>${s.name}</button>
+    `
+}
+
+let activeScript = 0;
+const scriptEditor = document.getElementById('scriptEditor');
+scriptEditor.value = world.scripts[0].syntax;
+
+scriptEditor.addEventListener("change", (event) => {
+    world.scripts[activeScript].syntax = scriptEditor.value;
+
+    //console.log(scriptEditor.value.split('\n'))
+});
+
+document.getElementById('reloadbutton').onclick = function() {
+    world.loadScripts()
+}
 
 document.getElementById("movebtn").onclick = function () { tool.change('move') };
 document.getElementById("scalebtn").onclick = function () { tool.change('scale') };
 document.getElementById("rotatebtn").onclick = function () { tool.change('rotate') };
-
 document.getElementById("newpartbutton").onclick = function () {
     const direction = new THREE.Vector3();
 
@@ -84,7 +110,8 @@ function importWorld() {
         var fileContent = e.target.result;
 
         let w = btoa(fileContent);
-        window.open(`../studio/?data=${w}`, '_blank').focus()
+        sessionStorage.setItem('world', w)
+        window.location.reload(false)
       };
 
       reader.readAsText(file);
@@ -100,10 +127,10 @@ document.getElementById("playbtn").onclick = function () {
 };
 
 
-function mouseCast(target = world.scene.children, event) { //lol, thanks chatGPT
+function mouseCast(target = world.scene.children, event) {
     const mouse = new THREE.Vector2();
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    mouse.x = (event.offsetX / world.canvas.clientWidth) * 2 - 1;
+    mouse.y = -(event.offsetY / world.canvas.clientHeight) * 2 + 1;
 
     world.raycaster.setFromCamera(mouse, world.camera);
 
@@ -112,20 +139,14 @@ function mouseCast(target = world.scene.children, event) { //lol, thanks chatGPT
 
 fetch('https://api.polyhaven.com/assets?t=textures')
     .then(response => {
-        // Check if the response status is OK (HTTP status code 200)
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
-
-        // Parse the response as needed, depending on whether it's JSON, text, or other data
-        // For example, to parse as JSON:
         return response.json();
     })
     .then(data => {
-        // Use the data from the response
-        console.log(data);
         for (let d in data) {
-            document.getElementById("matIndexDiv").insertAdjacentHTML('beforeend', `
+            document.getElementById("sidebar").insertAdjacentHTML('beforeend', `
         <img id="${d}" class="materialBtn" src="https://cdn.polyhaven.com/asset_img/thumbs/${d}.png" alt="material">
         `)
 
@@ -135,25 +156,8 @@ fetch('https://api.polyhaven.com/assets?t=textures')
         }
     })
     .catch(error => {
-        // Handle errors
         console.error('Fetch error:', error);
     });
-
-document.getElementById('matSearchBtn').onclick = function () {
-    let query = document.getElementById('matSearchTextarea').value;
-    let buttonList = document.getElementsByClassName('materialBtn');
-
-    for (let m in buttonList) {
-        let btn = buttonList[m];
-
-        if (btn.id.includes(query)) {
-            btn.style.display = 'inline'
-        } else {
-            btn.style.display = 'none'
-        }
-    }
-}
-
 
 let map = {
     'input-pos-x': {
@@ -321,7 +325,7 @@ class Tool {
                 });
 
 
-                world.renderer.domElement.addEventListener("mousemove", (event) => {
+                world.canvas.addEventListener("mousemove", (event) => {
                     if (this.active) {
                         this.traversePlane.lookAt(world.camera.position);
                         if (this.axis === 'x') {
@@ -367,7 +371,7 @@ class Tool {
 
         this.mode = "move";
 
-        world.renderer.domElement.addEventListener("mousedown", (event) => {
+        world.canvas.addEventListener("mousedown", (event) => {
             if (event.button === 0) {
                 const intersects = mouseCast(world.parts.concat(this.draggables), event);
 
@@ -394,7 +398,7 @@ class Tool {
             }
         });
 
-        world.renderer.domElement.addEventListener("mousemove", (event) => {
+        world.canvas.addEventListener("mousemove", (event) => {
             let highlight;
 
             if (this.selpart) {
@@ -410,8 +414,7 @@ class Tool {
 
     setSelPart(obj) {
         if (obj) {
-            document.getElementById('sidebar').style.display = 'inline';
-            document.getElementById('matIndexContainer').style.display = 'inline';
+            //document.getElementById('sidebar').style.display = 'inline';
 
             for (let d in this.draggables) {
                 this.draggables[d].visible = true;
@@ -452,8 +455,7 @@ class Tool {
                 document.getElementById('input-em').checked = false;
             }
         } else {
-            document.getElementById('sidebar').style.display = 'none';
-            document.getElementById('matIndexContainer').style.display = 'none';
+            //document.getElementById('sidebar').style.display = 'none';
 
             for (let d in this.draggables) {
                 this.draggables[d].visible = false;
@@ -579,6 +581,7 @@ class Tool {
 }
 
 const tool = new Tool();
+tool.change('move');
 
 
 const controls = new PointerLockControls(world.camera, world.renderer.domElement);

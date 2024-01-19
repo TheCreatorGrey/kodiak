@@ -24,7 +24,9 @@
 
   <script type="module" src="studio.js"></script>
 
-  <div style="z-index: 2; position: absolute; font-size: 0; left: 50%; transform: translateX(-50%);">
+  <canvas id="cnv" class="studioCanvas"></canvas>
+
+  <div style="z-index: 100; position: absolute; font-size: 0; width: 100%; height: 40px;">
     <button id="playbtn" class="menuButton">
       Play
     </button>
@@ -38,21 +40,24 @@
       <input type="file" id="fileInput" style="display: none;">
     </button>
 
-    <button style="background-color: rgba(50, 50, 50, .5);" class="menuButton">Tool:</button>
-    <button  id="movebtn" class="menuButton">Move</button>
+    <button class="menuButton menuSection">Tool:</button>
+    <button id="movebtn" class="menuButton">Move</button>
     <button id="scalebtn" class="menuButton">Scale</button>
     <button id="rotatebtn" class="menuButton">Rotate</button>
     <button id="delbtn" class="menuButton">Delete</button>
     <button id="clonebtn" class="menuButton">Duplicate</button>
 
-    <button style="background-color: rgba(50, 50, 50, .5);" class="menuButton">Create:</button>
+    <button class="menuButton menuSection">Create:</button>
     <button id="newpartbutton" class="menuButton">+ New Part</button>
 
-    <button style="background-color: rgba(50, 50, 50, .5);" class="menuButton">Snap:</button>
-    <textarea class="menuButton" style="height: 24px; width: 50px;" id="snap-input"></textarea>
+    <button class="menuButton menuSection">Snap:</button>
+    <textarea class="menuButton" style="width: 50px; padding: 0;" id="snap-input"></textarea>
+
+    <button class="menuButton menuSection">Scripts:</button>
+    <button id="reloadbutton" class="menuButton">Reload</button>
   </div>
 
-  <div style="z-index: 100; position: absolute; right: 0; top: 0; width: 200px; height: 100%; background-color: rgba(0, 0, 0, .5); overflow-y: auto; display: none; padding-right: 10px;" id="sidebar">
+  <div id="sidebar">
     <div class="sidebarSection headerSection">Transform:</div>
 
     <div class="sidebarSection">Position:</div>
@@ -120,9 +125,15 @@
     </div>
   </div>
 
-  <div style="z-index: 100; position: absolute; left: 0; top: 0; width: 200px; height: 100%; background-color: rgba(0, 0, 0, .5); display: none;" id="matIndexContainer">
-    <span><textarea id="matSearchTextarea" style="height: 15px; width: 100px;"></textarea><button id="matSearchBtn" style="height: 20px;">Search</button></span>
-    <div style="overflow-y: auto; height: 100%; width: 100%;" id="matIndexDiv">
+  <div id="studioConsole">
+      <strong style="color: red;">WARNING: Kodiak is under development; everything is subject to change. </strong>
+  </div>
+
+  <div id="scriptEditorContainer">
+    <div id="scriptBtnDisplay" style="width: 100%; height: 30px; background-color: black;"></div>
+    <div style="width: 100%; height: calc(100% - 30px);">
+      <div id="scriptEditorLineDisplay" style="width:20px; height: 100%; background-color: rgb(30, 30, 30); display: inline-block; color: white; font-family: Arial;"></div>
+      <textarea name="scriptEditor" id="scriptEditor" spellcheck="false"></textarea>
     </div>
   </div>
 </body>

@@ -1,14 +1,77 @@
 .menuButton {
-    background-color: rgba(0, 0, 0, .5);
+    background-color: rgb(20, 20, 20);
     border: 0;
     padding: 10px;
     color: white;
     font-size: 20px;
     margin: 0;
+    height: 100%;
+}
+
+.menuSection {
+    background-color: rgb(50, 50, 50);
+}
+
+#scriptEditor {
+    font-family: monospace;
+    background-color: rgb(20, 20, 20);
+    width: calc(100% - 30px); 
+    height: 100%; 
+    padding: 0;
+    font-size: 15px;
+    color: rgb(212, 213, 255);
+    overflow-x: auto;
+    text-wrap: nowrap;
+    display: inline-block;
+    border: 0;
+    margin: 0;
+    vertical-align: top;
+}
+
+#scriptEditorContainer {
+    z-index: 100; 
+    position: absolute; 
+    left: 0; 
+    top: 40px; 
+    width: 450px; 
+    height: calc(100% - 40px); 
+    background-color: rgb(0, 0, 0);
+    border: solid 1px gray;
+}
+
+#studioConsole {
+    color: white;
+    font-size: 20px;
+    font-family: sans-serif;
+    font-weight: 100;
+    overflow-y: scroll;
+    scrollbar-width: none;
+    z-index: 100; 
+    position: absolute; 
+    left: 450px; 
+    bottom: 0; 
+    width: calc(100% - 700px); 
+    height: 200px; 
+    background-color: rgb(20, 20, 20); 
+    border: solid 1px gray;
+}
+
+.studioCanvas {
+    height: calc(100% - 240px) !important; 
+    width: calc(100% - 700px) !important; 
+    position: absolute;
+    top: 40px;
+    left: 450px;
+    border: 1px gray solid;
+}
+
+.playerCanvas {
+    height: 100% !important;
+    width: 100% !important;
 }
 
 .sidebarSection {
-    background-color: rgba(30, 30, 30, .5);
+    background-color: rgb(30, 30, 30);
     border: 0;
     padding: 5px;
     color: white;
@@ -16,14 +79,27 @@
     text-align: center;
     width: 100%;
     font-family: sans-serif;
+    box-sizing: border-box;
+}
+
+#sidebar {
+    z-index: 100; 
+    position: absolute; 
+    right: 0; 
+    top: 40px; 
+    width: 250px; 
+    height: calc(100% - 40px); 
+    background-color: rgb(20, 20, 20); 
+    overflow-y: auto;
+    border: 1px gray solid;
 }
 
 .subSection {
-    background-color: rgba(0, 0, 0, .5)
+    background-color: rgb(20, 20, 20)
 }
 
 .headerSection {
-    background-color: rgba(50, 50, 50, .5)
+    background-color: rgb(50, 50, 50)
 }
 
 textarea {
@@ -44,14 +120,4 @@ textarea {
 
 hr {
     border-color: gray;
-}
-
-
-#matIndexContainer::-webkit-scrollbar {
-    display: none;
-  }
-
-#matIndexContainer {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
 }
