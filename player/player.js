@@ -45,7 +45,7 @@ document.addEventListener("mousedown", function() {
 });
 
 
-const playerHeight = 1.5;
+const playerHeight = 1.6;
 
 const playerMesh = new THREE.Mesh(
     new THREE.CapsuleGeometry(.5, playerHeight/2, 4),
