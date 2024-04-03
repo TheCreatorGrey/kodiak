@@ -144,6 +144,14 @@ export function startScript(scr, world, tickspeed=1) {
                 if (line[1] === 'multiply') {
                     variables[line[2]] *= parseValue(line[3])
                 }
+
+                if (line[1] === 'add') {
+                    variables[line[2]] += parseValue(line[3])
+                }
+
+                if (line[1] === 'subtract') {
+                    variables[line[2]] -= parseValue(line[3])
+                }
             }
     
             if (line[0] === 'part') {
@@ -217,5 +225,13 @@ export function startScript(scr, world, tickspeed=1) {
         if ((activeLine+1) > script.length) {
             clearInterval(interval);
         }
+
+
+
+        world.camera.position.set(
+            variables.camX,
+            variables.camY,
+            variables.camZ
+        )
     }, tickspeed)
 }
