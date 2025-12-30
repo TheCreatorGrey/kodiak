@@ -1,15 +1,94 @@
 import * as THREE from 'three';
-import { startScript } from './scripting.js';
 
-export const defaultWorld = "eyJwYXJ0cyI6W3sicG9zaXRpb24iOlszLjEyNSwxLjg3NSwwLjVdLCJzY2FsZSI6WzAuMjUsMy4yNSw1LjVdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJicmlja193YWxsXzAwNSIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlswLDAuMjUsMC41XSwic2NhbGUiOls2LDAuNSw1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYnJ1c2hlZF9jb25jcmV0ZV8yIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6WzAsMC42MjUsMC41XSwic2NhbGUiOls2LDAuMjUsNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6InJhd19wbGFua193YWxsIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzUwLDEwLDEwXX0seyJwb3NpdGlvbiI6WzIuODc1LDIuMTI1LDAuNV0sInNjYWxlIjpbMC4yNSwyLjc1LDQuNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJlaWdlX3dhbGxfMDAxIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzIwMCwyMDAsMjAwXX0seyJwb3NpdGlvbiI6Wy0xLjg3NSwzLjI1LDIuODc1XSwic2NhbGUiOlsxLjI1LDAuNSwwLjI1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmVpZ2Vfd2FsbF8wMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjAwLDIwMCwyMDBdfSx7InBvc2l0aW9uIjpbMCw0LjM3NSwwLjVdLCJzY2FsZSI6WzUuNSwwLjI1LDQuNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImdyZXlfcm9vZl90aWxlc18wMiIsInR5cGUiOiJjdWJlIiwiY29sb3IiOls1MCwwLDBdfSx7InBvc2l0aW9uIjpbMC44NzUsMi4xMjUsMi44NzVdLCJzY2FsZSI6WzQuMjUsMi43NSwwLjI1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmVpZ2Vfd2FsbF8wMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjAwLDIwMCwyMDBdfSx7InBvc2l0aW9uIjpbMCwyLjEyNSwtMS44NzVdLCJzY2FsZSI6WzYsMi43NSwwLjI1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmVpZ2Vfd2FsbF8wMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjAwLDIwMCwyMDBdfSx7InBvc2l0aW9uIjpbLTIuNzUsMi4xMjUsMi44NzVdLCJzY2FsZSI6WzAuNSwyLjc1LDAuMjVdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJiZWlnZV93YWxsXzAwMSIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyMDAsMjAwLDIwMF19LHsicG9zaXRpb24iOlstMi44NzUsMi4xMjUsMC41XSwic2NhbGUiOlswLjI1LDIuNzUsNC41XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmVpZ2Vfd2FsbF8wMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjAwLDIwMCwyMDBdfSx7InBvc2l0aW9uIjpbLTMuMTI1LDEuODc1LDAuNV0sInNjYWxlIjpbMC4yNSwzLjI1LDUuNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyaWNrX3dhbGxfMDA1IiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6WzAsMS44NzUsLTIuMTI1XSwic2NhbGUiOls2LDMuMjUsMC4yNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyaWNrX3dhbGxfMDA1IiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6WzAuODc1LDEuODc1LDMuMTI1XSwic2NhbGUiOls0LjI1LDMuMjUsMC4yNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyaWNrX3dhbGxfMDA1IiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6Wy0yLjc1LDEuODc1LDMuMTI1XSwic2NhbGUiOlswLjUsMy4yNSwwLjI1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYnJpY2tfd2FsbF8wMDUiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjU1LDI1NSwyNTVdfSx7InBvc2l0aW9uIjpbLTEuODc1LDMuMjUsMy4xMjVdLCJzY2FsZSI6WzEuMjUsMC41LDAuMjVdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJicmlja193YWxsXzAwNSIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlstMS44NzUsMC4xMjUsMy42MjVdLCJzY2FsZSI6WzEuMjUsMC4yNSwwLjI1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYnJ1c2hlZF9jb25jcmV0ZSIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlswLDMuMzc1LDAuNV0sInNjYWxlIjpbNS41LDAuMjUsNC41XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmVpZ2Vfd2FsbF8wMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjU1LDI1NSwyNTVdfSx7InBvc2l0aW9uIjpbMCwzLjYyNSwwLjVdLCJzY2FsZSI6WzcsMC4yNSw2XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiZ3JleV9yb29mX3RpbGVzXzAyIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzUwLDAsMF19LHsicG9zaXRpb24iOlswLDMuODc1LDAuNV0sInNjYWxlIjpbNi41LDAuMjUsNS41XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiZ3JleV9yb29mX3RpbGVzXzAyIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzUwLDAsMF19LHsicG9zaXRpb24iOlswLDQuMTI1LDAuNV0sInNjYWxlIjpbNiwwLjI1LDVdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJncmV5X3Jvb2ZfdGlsZXNfMDIiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbNTAsMCwwXX0seyJwb3NpdGlvbiI6Wy0xLjg3NSwwLjM3NSwzLjEyNV0sInNjYWxlIjpbMS4yNSwwLjc1LDAuMjVdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJicnVzaGVkX2NvbmNyZXRlIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6Wy0xLjg3NSwwLjI1LDMuMzc1XSwic2NhbGUiOlsxLjI1LDAuNSwwLjI1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYnJ1c2hlZF9jb25jcmV0ZSIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlswLDMuMTI1LDAuNV0sInNjYWxlIjpbMSwwLjI1LDFdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJkb3VibGVfYnJpY2tfZmxvb3IiLCJ0eXBlIjoiY3lsaW5kZXIiLCJjb2xvciI6WzI1NSwyNTUsMjU1XSwiZW1pc3NpdmUiOnRydWUsImVtaXNzaW9uSW50ZW5zaXR5IjozLCJlbWlzc2lvblJhbmdlIjoxMH0seyJwb3NpdGlvbiI6WzAsLTAuMTI1LDMuNV0sInNjYWxlIjpbMTMuNSwwLjI1LDE4XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYnJvd25fbXVkX2xlYXZlc18wMSIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlswLDEuMjUsMTIuMzc1XSwic2NhbGUiOlsxMywyLjUsMC4yNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyb3duX3BsYW5rc18wMyIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOls2LjYyNSwxLjI1LDMuNV0sInNjYWxlIjpbMC4yNSwyLjUsMThdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJicm93bl9wbGFua3NfMDMiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjU1LDI1NSwyNTVdfSx7InBvc2l0aW9uIjpbLTYuNjI1LDEuMjUsMy41XSwic2NhbGUiOlswLjI1LDIuNSwxOF0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyb3duX3BsYW5rc18wMyIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlswLDEuMjUsLTUuMzc1XSwic2NhbGUiOlsxMywyLjUsMC4yNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyb3duX3BsYW5rc18wMyIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlstNC4yNSwxLjUsOS42MjVdLCJzY2FsZSI6WzEsMSwxXSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmx1ZV9wYWludGVkX3BsYW5rcyIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlstNC43NSwwLjUsMTAuMjVdLCJzY2FsZSI6WzEsMSwxXSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiZG91YmxlX2JyaWNrX2Zsb29yIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6Wy00Ljc1LDAuNSw5XSwic2NhbGUiOlsxLDEsMV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJhcmtfd2lsbG93IiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6Wy0zLjUsMC41LDkuNjI1XSwic2NhbGUiOlsxLDEsMV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJsdWVfZmxvb3JfdGlsZXNfMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjU1LDI1NSwyNTVdfV0sInNjcmlwdHMiOlt7InN5bnRheCI6ImxvZyBzdHI6SGVsbG8hIiwibmFtZSI6Ik1haW4ifV19";
+//export const defaultWorld = "eyJwYXJ0cyI6W3sicG9zaXRpb24iOlszLjEyNSwxLjg3NSwwLjVdLCJzY2FsZSI6WzAuMjUsMy4yNSw1LjVdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJicmlja193YWxsXzAwNSIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlswLDAuMjUsMC41XSwic2NhbGUiOls2LDAuNSw1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYnJ1c2hlZF9jb25jcmV0ZV8yIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6WzAsMC42MjUsMC41XSwic2NhbGUiOls2LDAuMjUsNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6InJhd19wbGFua193YWxsIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzUwLDEwLDEwXX0seyJwb3NpdGlvbiI6WzIuODc1LDIuMTI1LDAuNV0sInNjYWxlIjpbMC4yNSwyLjc1LDQuNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJlaWdlX3dhbGxfMDAxIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzIwMCwyMDAsMjAwXX0seyJwb3NpdGlvbiI6Wy0xLjg3NSwzLjI1LDIuODc1XSwic2NhbGUiOlsxLjI1LDAuNSwwLjI1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmVpZ2Vfd2FsbF8wMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjAwLDIwMCwyMDBdfSx7InBvc2l0aW9uIjpbMCw0LjM3NSwwLjVdLCJzY2FsZSI6WzUuNSwwLjI1LDQuNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImdyZXlfcm9vZl90aWxlc18wMiIsInR5cGUiOiJjdWJlIiwiY29sb3IiOls1MCwwLDBdfSx7InBvc2l0aW9uIjpbMC44NzUsMi4xMjUsMi44NzVdLCJzY2FsZSI6WzQuMjUsMi43NSwwLjI1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmVpZ2Vfd2FsbF8wMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjAwLDIwMCwyMDBdfSx7InBvc2l0aW9uIjpbMCwyLjEyNSwtMS44NzVdLCJzY2FsZSI6WzYsMi43NSwwLjI1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmVpZ2Vfd2FsbF8wMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjAwLDIwMCwyMDBdfSx7InBvc2l0aW9uIjpbLTIuNzUsMi4xMjUsMi44NzVdLCJzY2FsZSI6WzAuNSwyLjc1LDAuMjVdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJiZWlnZV93YWxsXzAwMSIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyMDAsMjAwLDIwMF19LHsicG9zaXRpb24iOlstMi44NzUsMi4xMjUsMC41XSwic2NhbGUiOlswLjI1LDIuNzUsNC41XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmVpZ2Vfd2FsbF8wMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjAwLDIwMCwyMDBdfSx7InBvc2l0aW9uIjpbLTMuMTI1LDEuODc1LDAuNV0sInNjYWxlIjpbMC4yNSwzLjI1LDUuNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyaWNrX3dhbGxfMDA1IiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6WzAsMS44NzUsLTIuMTI1XSwic2NhbGUiOls2LDMuMjUsMC4yNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyaWNrX3dhbGxfMDA1IiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6WzAuODc1LDEuODc1LDMuMTI1XSwic2NhbGUiOls0LjI1LDMuMjUsMC4yNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyaWNrX3dhbGxfMDA1IiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6Wy0yLjc1LDEuODc1LDMuMTI1XSwic2NhbGUiOlswLjUsMy4yNSwwLjI1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYnJpY2tfd2FsbF8wMDUiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjU1LDI1NSwyNTVdfSx7InBvc2l0aW9uIjpbLTEuODc1LDMuMjUsMy4xMjVdLCJzY2FsZSI6WzEuMjUsMC41LDAuMjVdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJicmlja193YWxsXzAwNSIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlstMS44NzUsMC4xMjUsMy42MjVdLCJzY2FsZSI6WzEuMjUsMC4yNSwwLjI1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYnJ1c2hlZF9jb25jcmV0ZSIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlswLDMuMzc1LDAuNV0sInNjYWxlIjpbNS41LDAuMjUsNC41XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmVpZ2Vfd2FsbF8wMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjU1LDI1NSwyNTVdfSx7InBvc2l0aW9uIjpbMCwzLjYyNSwwLjVdLCJzY2FsZSI6WzcsMC4yNSw2XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiZ3JleV9yb29mX3RpbGVzXzAyIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzUwLDAsMF19LHsicG9zaXRpb24iOlswLDMuODc1LDAuNV0sInNjYWxlIjpbNi41LDAuMjUsNS41XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiZ3JleV9yb29mX3RpbGVzXzAyIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzUwLDAsMF19LHsicG9zaXRpb24iOlswLDQuMTI1LDAuNV0sInNjYWxlIjpbNiwwLjI1LDVdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJncmV5X3Jvb2ZfdGlsZXNfMDIiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbNTAsMCwwXX0seyJwb3NpdGlvbiI6Wy0xLjg3NSwwLjM3NSwzLjEyNV0sInNjYWxlIjpbMS4yNSwwLjc1LDAuMjVdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJicnVzaGVkX2NvbmNyZXRlIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6Wy0xLjg3NSwwLjI1LDMuMzc1XSwic2NhbGUiOlsxLjI1LDAuNSwwLjI1XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYnJ1c2hlZF9jb25jcmV0ZSIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlswLDMuMTI1LDAuNV0sInNjYWxlIjpbMSwwLjI1LDFdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJkb3VibGVfYnJpY2tfZmxvb3IiLCJ0eXBlIjoiY3lsaW5kZXIiLCJjb2xvciI6WzI1NSwyNTUsMjU1XSwiZW1pc3NpdmUiOnRydWUsImVtaXNzaW9uSW50ZW5zaXR5IjozLCJlbWlzc2lvblJhbmdlIjoxMH0seyJwb3NpdGlvbiI6WzAsLTAuMTI1LDMuNV0sInNjYWxlIjpbMTMuNSwwLjI1LDE4XSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYnJvd25fbXVkX2xlYXZlc18wMSIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlswLDEuMjUsMTIuMzc1XSwic2NhbGUiOlsxMywyLjUsMC4yNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyb3duX3BsYW5rc18wMyIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOls2LjYyNSwxLjI1LDMuNV0sInNjYWxlIjpbMC4yNSwyLjUsMThdLCJyb3RhdGlvbiI6WzAsMCwwXSwibWF0ZXJpYWwiOiJicm93bl9wbGFua3NfMDMiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjU1LDI1NSwyNTVdfSx7InBvc2l0aW9uIjpbLTYuNjI1LDEuMjUsMy41XSwic2NhbGUiOlswLjI1LDIuNSwxOF0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyb3duX3BsYW5rc18wMyIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlswLDEuMjUsLTUuMzc1XSwic2NhbGUiOlsxMywyLjUsMC4yNV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJyb3duX3BsYW5rc18wMyIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlstNC4yNSwxLjUsOS42MjVdLCJzY2FsZSI6WzEsMSwxXSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiYmx1ZV9wYWludGVkX3BsYW5rcyIsInR5cGUiOiJjdWJlIiwiY29sb3IiOlsyNTUsMjU1LDI1NV19LHsicG9zaXRpb24iOlstNC43NSwwLjUsMTAuMjVdLCJzY2FsZSI6WzEsMSwxXSwicm90YXRpb24iOlswLDAsMF0sIm1hdGVyaWFsIjoiZG91YmxlX2JyaWNrX2Zsb29yIiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6Wy00Ljc1LDAuNSw5XSwic2NhbGUiOlsxLDEsMV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJhcmtfd2lsbG93IiwidHlwZSI6ImN1YmUiLCJjb2xvciI6WzI1NSwyNTUsMjU1XX0seyJwb3NpdGlvbiI6Wy0zLjUsMC41LDkuNjI1XSwic2NhbGUiOlsxLDEsMV0sInJvdGF0aW9uIjpbMCwwLDBdLCJtYXRlcmlhbCI6ImJsdWVfZmxvb3JfdGlsZXNfMDEiLCJ0eXBlIjoiY3ViZSIsImNvbG9yIjpbMjU1LDI1NSwyNTVdfV0sInNjcmlwdHMiOlt7InN5bnRheCI6ImxvZyBzdHI6SGVsbG8hIiwibmFtZSI6Ik1haW4ifV19";
 
-export class World {
-    constructor(data, advancedRendering=true, mode='studio') {
-        this.load(data, advancedRendering, mode)
+
+
+export function generateRandomID(length=8) {
+    let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let generated_id = "";
+
+    for (let i=0; i<length; i++) {
+        let char = chars[Math.floor(Math.random()*(chars.length-1))];
+        generated_id += char
     }
 
-    load(data, advancedRendering=true, mode='studio') {
-        this.canvas = document.getElementById('cnv');
+    return generated_id
+}
+
+
+
+export async function importObj(file) {
+    // Each line in an OBJ beginning with an f contains 3 sets of 3 numbers
+    // Each set represents a point in a face
+    // In each set, the first number is an index to the list of points
+    // defined by the lines beginning with v
+    // the second is an index to the list of uv coordinates or vt
+    // the third is for vertex normals
+
+    let request = await fetch(file);
+    let raw = await request.text();
+
+    let object = {"tris":[]};
+
+    let points = [];
+    let uv_coords = [];
+    let norms = [];
+
+    for (let line of raw.split("\n")) {
+        let segments = line.split(" ");
+        let line_type = segments[0];
+        if (line_type == "v") {
+            points.push([
+                parseFloat(segments[1]), 
+                parseFloat(segments[2]), 
+                parseFloat(segments[3])
+            ])
+        } 
+        
+        if (line_type == "vn") {
+            norms.push([
+                parseFloat(segments[1]), 
+                parseFloat(segments[2]), 
+                parseFloat(segments[3])
+            ])
+        }
+
+        if (line_type == "vt") {
+            uv_coords.push([
+                parseFloat(segments[1]), 
+                parseFloat(segments[2])
+            ])
+        }
+
+        if (line_type == "f") { // By the time a face line is found, the other components should be loaded
+            let p1_indices = segments[1].split("/");
+            let p2_indices = segments[2].split("/");
+            let p3_indices = segments[3].split("/");
+
+            object.tris.push(
+                [
+                    [points[parseInt(p1_indices[0])-1], norms[parseInt(p1_indices[2])-1], uv_coords[parseInt(p1_indices[1])-1]],
+                    [points[parseInt(p2_indices[0])-1], norms[parseInt(p2_indices[2])-1], uv_coords[parseInt(p2_indices[1])-1]],
+                    [points[parseInt(p3_indices[0])-1], norms[parseInt(p3_indices[2])-1], uv_coords[parseInt(p3_indices[1])-1]]
+                ]
+            )
+        }
+    }
+
+    console.log(`Obj ${file} loaded`)
+
+    return object
+}
+
+
+export class World {
+    constructor(mode='studio') {
+        this.mode = mode;
+    }
+
+    async load(file) {
+        this.canvas = document.getElementById('canvas');
 
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(100, this.canvas.clientWidth / this.canvas.clientHeight, 0.1, 1000000);
@@ -23,60 +102,26 @@ export class World {
             canvas: this.canvas
         });
 
-        this.renderer.shadowMap.enabled = true;
+        let light = new THREE.DirectionalLight(0xFFFFFF, 2);
+        light.position.set(0, 1000, 0);
+        light.target.position.set(600, 0, 0);
+        this.scene.add(light);
+        this.scene.add(light.target);
 
-        const resulution = 1;
-        this.renderer.setSize(this.canvas.clientWidth / resulution, this.canvas.clientHeight / resulution);
-        //this.renderer.domElement.style.width = (this.renderer.domElement.width * resulution) + 'px';
-        //this.renderer.domElement.style.height = (this.renderer.domElement.height * resulution) + 'px';
+        let amb = new THREE.AmbientLight(0xFFFFFF, 1);
+        this.scene.add(amb);
+
+        const resolution = 1;
+        this.renderer.setSize(this.canvas.clientWidth / resolution, this.canvas.clientHeight / resolution);
+        //this.renderer.domElement.style.width = (this.renderer.domElement.width * resolution) + 'px';
+        //this.renderer.domElement.style.height = (this.renderer.domElement.height * resolution) + 'px';
         document.body.appendChild(this.renderer.domElement);
-        this.mode = mode;
-
 
         this.camera.position.y = 2;
         this.camera.fov = 70;
         this.camera.updateProjectionMatrix();
 
-        this.skybox = new THREE.Mesh(
-            new THREE.BoxGeometry(100000, 100000, 100000),
-            new THREE.MeshBasicMaterial({color: new THREE.Color('rgb(50, 50, 50)'), side: THREE.BackSide}));
-
-        this.scene.add(this.skybox);
-
-
-        const sun = new THREE.DirectionalLight(0xFFFDDD, 3);
-        sun.position.set(2000, 2000, 2000);
-        sun.castShadow = true;
-        //sun.shadow.radius = 8;
-
-        sun.shadow.camera.far = 10000;
-        this.scene.add(sun);
-
-        this.ambient = new THREE.AmbientLight( new THREE.Color(`rgb(50, 50, 50)`) );
-        this.scene.add(this.ambient);
-
-        this.scene.fog = new THREE.FogExp2( new THREE.Color(`rgb(50, 50, 50)`), .05);
-
-
-        //const planeGeometry = new THREE.PlaneGeometry(50, 50);
-        //const diffuse = this.textureLoader.load(`https://media.discordapp.net/attachments/1043652794374160385/1152635703608475779/Untitled_1.png?width=630&height=630`);
-        //diffuse.repeat.set(50, 50);
-        //diffuse.wrapS = THREE.RepeatWrapping;
-        //diffuse.wrapT = THREE.RepeatWrapping;
-        //const planeMaterial = new THREE.MeshPhongMaterial({
-        //    map: diffuse,
-        //});
-        //const groundPlane = new THREE.Mesh(planeGeometry, planeMaterial);
-        //groundPlane.rotation.x = -Math.PI / 2;
-        //this.scene.add(groundPlane);
-        //
-        //groundPlane.receiveShadow = true;
-
-        //sun.lookAt(groundPlane.position);
-
-
         window.addEventListener("resize", (event) => {
-            console.log(this.canvas.clientWidth)
             this.camera.aspect = this.canvas.clientWidth / this.canvas.clientHeight;
             this.camera.updateProjectionMatrix();
 
@@ -86,343 +131,367 @@ export class World {
 
 
         this.parts = [];
-        this.lights = [];
-        this.advancedRendering = advancedRendering;
-        this.materialCache = {};
+        this.materials = {};
 
-        if (data) {
-            let parsed = JSON.parse(atob(data));
-            parsed.world = {skyColor:[50, 50, 50], studioCamPos:[2, 2, -2, 0, 2.356, 0]}
-            
-            if (parsed.world) {
-                let rawcol = parsed.world.skyColor;
-                let col = new THREE.Color(`rgb(${rawcol[0]},${rawcol[1]},${rawcol[2]})`);
-                this.skybox.material.color = col;
-                this.ambient.color = col;
-                this.scene.fog.color = col;
+        // Cache of THREE.js materials representing Kodiak materials in data.assets.materials
+        this.three_material_cache = {};
 
-                if (this.mode = 'studio') {
-                    let studiocampos = parsed.world.studioCamPos;
+        // Dictionary of THREE.js objects representing parts. The key of any object 
+        // in this array should match the key of the corresponding part in data.space.parts
+        // Are they called dictionaries or objects in JavaScript? I don't know
+        this.three_part_objects = {};
 
-                    this.camera.position.set(
-                        studiocampos[0],
-                        studiocampos[1],
-                        studiocampos[2]
-                    );
 
-                    this.camera.rotation.set(
-                        studiocampos[3],
-                        studiocampos[4],
-                        studiocampos[5]
-                    );
+        let request = await fetch(file);
+        this.data = await request.json()
+
+        this.materials = this.data.assets.materials;
+        this.models = this.data.assets.models;
+
+        //console.log(this.materials)
+
+        // Preload primitives
+        this.data.assets.models["box"] = await importObj("/kodiak/assets/models/primitives/box.obj")
+        this.data.assets.models["wedge"] = await importObj("/kodiak/assets/models/primitives/wedge.obj")
+        this.data.assets.models["pyramid"] = await importObj("/kodiak/assets/models/primitives/pyramid.obj")
+        this.data.assets.models["plane"] = await importObj("/kodiak/assets/models/primitives/plane.obj")
+        this.data.assets.models["sphere"] = await importObj("/kodiak/assets/models/primitives/sphere.obj")
+        this.data.assets.models["cylinder"] = await importObj("/kodiak/assets/models/primitives/cylinder.obj")
+        this.data.assets.models["cone"] = await importObj("/kodiak/assets/models/primitives/cone.obj")
+        this.data.assets.models["circle"] = await importObj("/kodiak/assets/models/primitives/circle.obj")
+
+        this.data.assets.models["donut"] = await importObj("/kodiak/assets/models/special/donut.obj")
+        this.data.assets.models["skybox"] = await importObj("/kodiak/assets/models/special/skybox.obj")
+        this.data.assets.models["terrain"] = await importObj("/kodiak/assets/models/special/terrain.obj")
+
+        for (let part_id in this.data.space.parts) {
+            this.manifest(part_id)
+        }
+    }
+
+    setMaterialTexture(material_id, texture_type, location) {
+        this.materials[material_id].textures[texture_type] = location;
+        let three_material = this.three_material_cache[material_id];
+
+        let new_texture = this.textureLoader.load(location);
+        new_texture.wrapS = THREE.RepeatWrapping;
+        new_texture.wrapT = THREE.RepeatWrapping;
+        new_texture.colorSpace = THREE.SRGBColorSpace;
+        
+        three_material.map = new_texture;
+    }
+
+    setMaterial(part_id, material_id) {
+        let part = this.data.space.parts[part_id]
+        if (part) {
+            let object = this.getPartObjectByID(part_id);
+
+            let material = this.materials[material_id]; // Kodiak material object
+
+            let three_material; // THREE.js material object
+
+            if (material_id in this.three_material_cache) { // Use cached material if it exists
+                three_material = this.three_material_cache[material_id]
+            } else { // If not, cache it
+                let diffuse = this.textureLoader.load(material.textures.diffuse);
+                
+                diffuse.wrapS = THREE.RepeatWrapping;
+                diffuse.wrapT = THREE.RepeatWrapping;
+                diffuse.colorSpace = THREE.SRGBColorSpace; // So the textures dont look washed out
+        
+                three_material = new THREE.MeshLambertMaterial({
+                    map: diffuse,
+                    transparent: true,
+                    depthTest: true,
+                    alphaTest: 0.5,
+                    color:new THREE.Color(material.tint[0]/255, material.tint[1]/255, material.tint[2]/255)
+                });
+
+                this.three_material_cache[material_id] = three_material
+            }
+
+            object.material = three_material;
+            part.material = material_id
+
+            this.updateUVs(part_id)
+        } else {
+            console.warn("Did not set material because no part was given or found")
+        }
+    }
+
+
+    setModel(part_id, model_id) {
+        let part = this.data.space.parts[part_id]
+        if (part) {
+            let object = this.getPartObjectByID(part_id);
+
+            let model = this.models[model_id]; // Kodiak model object
+
+            // Every part has a model property which refers to mesh data stored in
+            // the file. This mesh data is in JSON format like the rest of the file
+
+            let geometry = new THREE.BufferGeometry();
+
+            let vertices = [];
+            let norms = [];
+            let uvs = [];
+
+            for (let tri of model.tris) {
+                for (let index of tri) {
+                    //console.log(index)
+                    vertices.push(...index[0])
+                    norms.push(...index[1])
+                    uvs.push(...index[2])
                 }
             }
 
-            for (let p in parsed.parts) {
-                let part = parsed.parts[p];
+            //console.log(vertices)
 
-                this.newPart(
-                    part.type,
-                    part.position,
-                    part.scale,
-                    part.rotation,
-                    part.material,
-                    part.color,
-                    part.emissive,
-                    part.emissionIntensity,
-                    part.emissionRange
+            geometry.setAttribute('position',
+                new THREE.BufferAttribute(
+                    new Float32Array(vertices),
+                    3
                 )
-            }
+            );
+        
+            geometry.setAttribute('normal',
+                new THREE.BufferAttribute(
+                    new Float32Array(norms),
+                    3
+                )
+            );
+        
+            geometry.setAttribute('uv',
+                new THREE.BufferAttribute(
+                    new Float32Array(uvs),
+                    2
+                )
+            );
 
-            if (parsed.scripts) {
-                this.scripts = parsed.scripts;
-            } else {
-                this.scripts = [{syntax:'log str:Hello!', name:'Main'}]
-            }
-        }
-    }
-
-    loadScripts() {
-        for (let sc of this.scripts) {
-            startScript(sc, this)
-        }
-    }
-
-    getMaterial(id) {
-        if (false) { //(this.materialCache[id])
-            return this.materialCache[id];
-        } else {
-            const diff = this.textureLoader.load(`https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/${id}/${id}_diff_1k.png`);
-
-            diff.wrapS = THREE.RepeatWrapping;
-            diff.wrapT = THREE.RepeatWrapping;
-
-            let material;
-
-            if (this.advancedRendering) {
-                const arm = this.textureLoader.load(`https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/${id}/${id}_arm_1k.png`);
-                const norm = this.textureLoader.load(`https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/${id}/${id}_nor_gl_1k.png`);
-
-                arm.wrapS = THREE.RepeatWrapping;
-                arm.wrapT = THREE.RepeatWrapping;
             
-                norm.wrapS = THREE.RepeatWrapping;
-                norm.wrapT = THREE.RepeatWrapping;
-
-                material = new THREE.MeshStandardMaterial({
-                    map: diff,
-                    aoMap: arm,
-                    roughnessMap: arm,
-                    metalnessMap: arm,
-                    normalMap: norm
-                })
-            } else {
-                material = new THREE.MeshLambertMaterial({
-                    map: diff
-                })
-            }
-
-            this.materialCache[id] = material;
-            return material;
-        }
-    }
-
-    setMat(part, matID) {
-        if (part) {
-            //let col = new THREE.Color(`rgb(${part.material.color.r*255},${part.material.color.g*255},${part.material.color.b*255})`)
-            part.material = this.getMaterial(matID);
-            //part.material.color = col;
-
-            part.mat = matID;
+            object.geometry = geometry;
+            part.model = model_id; // update metadata so uv update works
+            console.log("Set model")
         } else {
-            console.warn("[!] Action (set material) was not performed; No part was supplied or found.")
+            console.warn("Did not set model because no part was given or found")
         }
     }
 
-    setGeom(part, geomName) {
-        let newObjGeom;
 
-        if (geomName === "cube") {
-            newObjGeom = new THREE.BoxGeometry();
-        } else if (geomName === "sphere") {
-            newObjGeom = new THREE.SphereGeometry(.5);
-        } else if (geomName === "cylinder") {
-            newObjGeom = new THREE.CylinderGeometry(.5, .5);
-        } else if (geomName === "plane") {
-            newObjGeom = new THREE.PlaneGeometry();
-        } else if (geomName === "torus") {
-            newObjGeom = new THREE.TorusGeometry(.3, .2);
-        } else if (geomName === "pyramid") {
-            newObjGeom = new THREE.ConeGeometry(.5, 1, 4);  
-            //newObjGeom.rotateY(Math.PI / 4);
-        } else if (geomName === "cone") {
-            newObjGeom = new THREE.ConeGeometry(.5, 1, 24); 
+    manifest(part_id) {
+        let object;
+        let part = this.data.space.parts[part_id];
+        if (! (part_id in this.three_part_objects)) {
+
+            object = new THREE.Mesh();
+            object.geometry = new THREE.BoxGeometry();
+            object.is_part = true;
+            object.part_id = part_id;
+            this.scene.add(object);
+
+            this.three_part_objects[part_id] = object;
+
+            // This must be after the previous lines otherwise there will be a recursion error
+            this.setModel(part_id, part.model)
         }
 
-        part.geometry = newObjGeom;
-        part.type = geomName;
+        object = this.three_part_objects[part_id];
 
-        this.updateUVs(part);
+        // Apply part attributes to the THREE.js object / mesh
+
+        object.position.x = part.position[0];
+        object.position.y = part.position[1];
+        object.position.z = part.position[2];
+
+        object.rotation.x = part.rotation[0];
+        object.rotation.y = part.rotation[1];
+        object.rotation.z = part.rotation[2];
+
+        object.scale.x = part.scale[0];
+        object.scale.y = part.scale[1];
+        object.scale.z = part.scale[2];
+
+        this.setMaterial(part_id, part.material);
+        this.updateUVs(part_id);
     }
 
-    newPart(type="cube", position=[0, .5, 0], scale=[1, 1, 1], rotation=[0, 0, 0], material="double_brick_floor", color=[255, 255, 255], emissive=false, emissionIntensity=2, emissionRange=10) {
-        const newObj = new THREE.Mesh();
 
-        this.setGeom(newObj, type);
-        this.setMat(newObj, material);
-
-        newObj.position.x = position[0];
-        newObj.position.y = position[1];
-        newObj.position.z = position[2];
-
-        newObj.rotation.x = rotation[0];
-        newObj.rotation.y = rotation[1];
-        newObj.rotation.z = rotation[2];
-
-        newObj.scale.x = scale[0];
-        newObj.scale.y = scale[1];
-        newObj.scale.z = scale[2];
-
-        newObj.material.color.r = color[0]/255;
-        newObj.material.color.g = color[1]/255;
-        newObj.material.color.b = color[2]/255;
-
-        newObj.receiveShadow = this.advancedRendering;
-        newObj.castShadow = this.advancedRendering;
-
-        newObj.isPart = true;
-
-        this.parts.push(newObj);
-        this.scene.add(newObj);
-
-        this.updateUVs(newObj);
-
-        if (emissive) {
-            this.changeEmissive(newObj, true, emissionIntensity, emissionRange)
+    getPartObjectByID(part_id) {
+        if (! (part_id in this.three_part_objects)) {
+            this.manifest(part_id)
         }
 
-        return newObj;
+        return this.three_part_objects[part_id]
     }
 
-    async changeEmissive(part, mode, intensity=2, range=10) {
-        if (mode === true) {
-            part.receiveShadow = false;
-            part.castShadow = false;
+    getPartByID(part_id) {
+        return this.data.space.parts[part_id]
+    }
 
-            let col = new THREE.Color(`rgb(${part.material.color.r*255},${part.material.color.g*255},${part.material.color.b*255})`);
 
-            part.material = new THREE.MeshBasicMaterial({color:col});
-    
-            let light = new THREE.PointLight(col, intensity);
-            light.shadow.camera.far = range;
-            this.scene.add(light);
-            light.castShadow = true;
-            light.parent = part;
-            part.light = light;
-            part.emissive = true;
-        } else {
-            part.receiveShadow = this.advancedRendering;
-            part.castShadow = this.advancedRendering;
-            this.setMat(part, part.mat);
 
-            this.scene.remove(part.light);
-            part.light = null;
-            part.emissive = false;
+    // Creates a part in data.space.parts and returns the ID
+    newPart(position=[0, .5, 0], scale=[1, 1, 1], rotation=[0, 0, 0], materialID="default") {
+        let new_part = {"position":[0, 0, 0], "scale":[1, 1, 1], "rotation":[0, 0, 0], "material":"dirt", "model":"box"};
+        let part_id = generateRandomID();
+
+        this.data.space.parts[part_id] = new_part;
+        return part_id
+    }
+
+    newMaterial(name) {
+        let new_material = {
+            "textures":{
+                "diffuse":"/assets/textures/dark_brick.png"
+            },
+
+            "tint":[255, 255, 255],
+            "stretch":false,
+            "scale":1
         }
+
+        this.data.assets.materials[name] = new_material;
+        return this.data.assets.materials[name]
     }
 
-    async clonePart(part) {
+
+    async clonePart(part_id) {
+        let part = this.getPartByID(part_id);
+
+        console.log(generateRandomID())
+
         if (part) {
-            this.newPart(
-                part.type,
-                [part.position.x, part.position.y, part.position.z],
-                [part.scale.x, part.scale.y, part.scale.z],
-                [part.rotation.x, part.rotation.y, part.rotation.z],
-                part.mat,
-                part.shadows
-            )
+            let clone_id = generateRandomID();
+            this.data.space.parts[clone_id] = structuredClone(part);
+            this.manifest(clone_id);
         } else {
-            console.warn("[!] Action (clone) was not performed; No part was supplied or found.")
+            console.warn("[Clone Part] No part was supplied or found.")
         }
     }
 
-    async delPart(part) {
-        if (part) {
-            if (part.emissive) {
-                this.scene.remove(part.light);
-            }
+    async delPart(part_id) {
+        let part = this.getPartByID(part_id);
 
-            this.parts = this.parts.filter(item => item !== part);
-            this.scene.remove(part);
+        if (part) {
+            let object = this.getPartObjectByID(part_id);
+
+            this.scene.remove(object);
+            delete this.data.space.parts[part_id];
+            delete this.three_part_objects[part_id];
 
         } else {
             console.warn("[!] Action (delete) was not performed; No part was supplied or found.")
         }
     }
 
-    async updateUVs(part) {
+    // Stretches the UVs of a cube to match its scale
+    async updateUVs(part_id) {
+        let part = this.getPartByID(part_id);
         if (part) {
-            if (part.type === "cube") {
-                //left
+            let object = this.getPartObjectByID(part_id);            
+            let part_material = this.materials[part.material];
+            let part_model = this.data.assets.models[part.model]
 
-                part.geometry.attributes.uv.array[2] = part.scale.z;
-                part.geometry.attributes.uv.array[6] = part.scale.z;
-        
-                part.geometry.attributes.uv.array[1] = part.scale.y;
-                part.geometry.attributes.uv.array[3] = part.scale.y;
-        
-        
-        
-                //right
-                part.geometry.attributes.uv.array[10] = part.scale.z;
-                part.geometry.attributes.uv.array[14] = part.scale.z;
-        
-                part.geometry.attributes.uv.array[9] = part.scale.y;
-                part.geometry.attributes.uv.array[11] = part.scale.y;
-        
-        
-                //top
-                part.geometry.attributes.uv.array[18] = part.scale.x;
-                part.geometry.attributes.uv.array[22] = part.scale.x;
-        
-                part.geometry.attributes.uv.array[17] = part.scale.z;
-                part.geometry.attributes.uv.array[19] = part.scale.z;
-        
-        
-                //bottom
-                part.geometry.attributes.uv.array[26] = part.scale.x;
-                part.geometry.attributes.uv.array[30] = part.scale.x;
-        
-                part.geometry.attributes.uv.array[25] = part.scale.z;
-                part.geometry.attributes.uv.array[27] = part.scale.z;
-        
-        
-                //left
-                part.geometry.attributes.uv.array[34] = part.scale.x;
-                part.geometry.attributes.uv.array[38] = part.scale.x;
-        
-                part.geometry.attributes.uv.array[33] = part.scale.y;
-                part.geometry.attributes.uv.array[35] = part.scale.y;
-        
-        
-                //right
-                part.geometry.attributes.uv.array[42] = part.scale.x;
-                part.geometry.attributes.uv.array[46] = part.scale.x;
-        
-                part.geometry.attributes.uv.array[41] = part.scale.y;
-                part.geometry.attributes.uv.array[43] = part.scale.y;
+            console.log(part.model)
+
+
+            // NEW SYSTEM: vertex normals will be used to determine whether uvs for that vertex should be moved
+            
+            if (!part_material.stretch) {
+                let vert_index = 0;
+                for (let tri of part_model.tris) {
+                    for (let vert of tri) {
+                        let norm = vert[1];
+                        let uv = vert[2];
+
+                        let max_norm = Math.max( // With this we can find the most "extreme" value, or the direction the normal most closely faces
+                            Math.abs(norm[0]), 
+                            Math.abs(norm[1]), 
+                            Math.abs(norm[2])
+                        )
+
+                        if (Math.abs(norm[1]) === max_norm) { // If the vertex normal is non-zero on the y axis, we can assume it is upward / downward facing and can be scaled on the x and z axes
+                            //console.log(vert_index, part.scale[0])
+                            object.geometry.attributes.uv.array[vert_index*2] = uv[0] * (part.scale[0]/part_material.scale)
+                            object.geometry.attributes.uv.array[(vert_index*2)+1] = uv[1] * (part.scale[2]/part_material.scale)
+                        }
+                        if (Math.abs(norm[0]) === max_norm) { //
+                            //console.log(vert_index, part.scale[0])
+                            object.geometry.attributes.uv.array[vert_index*2] = uv[0] * (part.scale[1]/part_material.scale)
+                            object.geometry.attributes.uv.array[(vert_index*2)+1] = uv[1] * (part.scale[2]/part_material.scale)
+                        }
+                        if (Math.abs(norm[2]) === max_norm) { //
+                            //console.log(vert_index, part.scale[0])
+                            object.geometry.attributes.uv.array[vert_index*2] = uv[0] * (part.scale[1]/part_material.scale)
+                            object.geometry.attributes.uv.array[(vert_index*2)+1] = uv[1] * (part.scale[0]/part_material.scale)
+                        }
+    
+    
+                        vert_index++;
+                    }
+                }
             }
-    
-    
-            part.geometry.attributes.uv.needsUpdate = true;
+
+            // /\/\/\/\/\/\/\/\
+
+
+
+
+            // These are the indices of vertices whose UVs should be scaled to the axes
+            // of the scale of the part. I tried my best to explain. Sorry
+            let x_scaled = [
+                18, 22, 26, 30, 34, 38, 42, 46
+            ]
+
+            let y_scaled = [
+                1, 3, 9, 11, 33, 35, 41, 43
+            ]
+
+            let z_scaled = [
+                2, 6, 10, 14, 17, 19, 25, 27,
+            ]
+
+
+            let update_vertex_uv = (index, part_scale_on_axis) => {
+                // If the material is not repeated, calling this will set the uv back to 1
+                // which is how it should be if the material does not repeat.
+                object.geometry.attributes.uv.array[index] = 1;
+
+                // If the material is set to not stretch, it should scale with the part.
+                // Setting the uv to the part's scale on the appropriate axis will make
+                // the texture scale with the part
+                if (!part_material.stretch) {
+                    object.geometry.attributes.uv.array[index] = part_scale_on_axis
+                }
+                
+                // Scale UVs by material texture scale
+                // Since the texture will appear smaller the greater the UV values are,
+                // the value should be divided, not multiplied by the scale
+                object.geometry.attributes.uv.array[index] /= part_material.scale
+            }
+
+
+            for (let i of x_scaled) {
+                //update_vertex_uv(i, part.scale[0])
+            }
+
+            for (let i of y_scaled) {
+                //update_vertex_uv(i, part.scale[1])
+            }
+
+            for (let i of z_scaled) {
+                //update_vertex_uv(i, part.scale[2])
+            }
+
+            object.geometry.attributes.uv.needsUpdate = true;
         } else {
-            console.warn("[!] Action (update uvs) was not performed; No part was supplied or found.")
+            console.warn("[Update UVs] No part was supplied or found.")
         }
+
+        console.log("Finished UV update")
     }
 
     export() {
-        var saveParts = [];
-
-        for (let p in this.parts) {
-            let part = this.parts[p];
-
-            saveParts.push({
-                position: [
-                    part.position.x,
-                    part.position.y,
-                    part.position.z
-                ],
-
-                scale: [
-                    part.scale.x,
-                    part.scale.y,
-                    part.scale.z
-                ],
-
-                rotation: [
-                    part.rotation.x,
-                    part.rotation.y,
-                    part.rotation.z
-                ],
-
-                material: part.mat,
-
-                type: part.type,
-
-                color: [
-                    part.material.color.r*255,
-                    part.material.color.g*255,
-                    part.material.color.b*255,
-                ]
-            })
-
-            if (part.emissive) {
-                saveParts[saveParts.length - 1].emissive = true;
-                saveParts[saveParts.length - 1].emissionIntensity = part.light.intensity;
-                saveParts[saveParts.length - 1].emissionRange = part.light.shadow.camera.far;
-            }
-        }
-
-        return {parts: saveParts, scripts:this.scripts};
+        return this.data; //{parts: saveParts, materials: [{diffuse:"https://thecreatorgrey.com/assets/characters/apple.png", stretch:true, size_x:0, size_y:0}]};
     }
 }

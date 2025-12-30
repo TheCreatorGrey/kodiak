@@ -1,18 +1,11 @@
 import * as THREE from 'three';
-import { World, defaultWorld } from '../world.js';
+import { World } from '../world.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { convertXML } from "/studio/xmlconverter.js";
 
-let data;
-const urlParams = new URLSearchParams(window.location.search);
-data = urlParams.get('data');
-
-if (! data) {
-    data = defaultWorld;
-}
-
-const world = new World(data);
-
-//
+const world = new World('player');
+world.load("/test_place.json");
+convertXML(world, "/studio/area 51.rbxmx")
 
 function cast(origin, direction, length, target=world.scene.children) {
     const raycaster = new THREE.Raycaster();
@@ -45,7 +38,7 @@ document.addEventListener("mousedown", function() {
 });
 
 
-const playerHeight = 1.6;
+const playerHeight = 178; // cm
 
 const playerMesh = new THREE.Mesh(
     new THREE.CapsuleGeometry(.5, playerHeight/2, 4),
@@ -63,19 +56,19 @@ function animate() {
     requestAnimationFrame(animate);
 
     if (pressedKeys["w"]) {
-        world.camera.translateZ(-5*dt)
+        world.camera.translateZ(-800*dt)
     }
     if (pressedKeys["s"]) {
-        world.camera.translateZ(5*dt)
+        world.camera.translateZ(800*dt)
     }
     if (pressedKeys["a"]) {
-        world.camera.translateX(-5*dt)
+        world.camera.translateX(-800*dt)
     }
     if (pressedKeys["d"]) {
-        world.camera.translateX(5*dt)
+        world.camera.translateX(800*dt)
     }
 
-    let c = cast(world.camera.position, new THREE.Vector3(0, -1, 0), 100, world.scene.children);
+    let c = cast(world.camera.position, new THREE.Vector3(0, -1, 0), 1000, world.scene.children);
 
     if (c.length > 0) {
         world.camera.position.y = c[0].point.y + playerHeight

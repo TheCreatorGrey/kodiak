@@ -12,57 +12,48 @@
     background-color: rgb(50, 50, 50);
 }
 
-#scriptEditor {
-    font-family: monospace;
-    background-color: rgb(20, 20, 20);
-    width: calc(100% - 30px); 
-    height: 100%; 
-    padding: 0;
-    font-size: 15px;
-    color: rgb(212, 213, 255);
-    overflow-x: auto;
-    text-wrap: nowrap;
-    display: inline-block;
-    border: 0;
-    margin: 0;
-    vertical-align: top;
-}
-
-#scriptEditorContainer {
-    z-index: 100; 
-    position: absolute; 
-    left: 0; 
-    top: 40px; 
-    width: 450px; 
-    height: calc(100% - 40px); 
-    background-color: rgb(0, 0, 0);
-    border: solid 1px gray;
-}
-
-#studioConsole {
-    color: white;
-    font-size: 20px;
-    font-family: sans-serif;
-    font-weight: 100;
-    overflow-y: scroll;
-    scrollbar-width: none;
-    z-index: 100; 
-    position: absolute; 
-    left: 450px; 
-    bottom: 0; 
-    width: calc(100% - 700px); 
-    height: 200px; 
-    background-color: rgb(20, 20, 20); 
-    border: solid 1px gray;
-}
 
 .studioCanvas {
-    height: calc(100% - 240px) !important; 
-    width: calc(100% - 700px) !important; 
+    height: 100% !important; 
+    width: calc(100% - 500px) !important; 
     position: absolute;
     top: 40px;
-    left: 450px;
+    left: 250px;
     border: 1px gray solid;
+}
+
+
+.sidebar {
+    z-index: 100; 
+    position: absolute; 
+    width: 250px; 
+    background-color: rgb(20, 20, 20); 
+    overflow-y: auto;
+    border: 1px gray solid;
+}
+
+#material_list_bar {
+    top: 40px; 
+    left: 0;
+    height: 50%;
+}
+
+#model_list_bar {
+    bottom: 0; 
+    left: 0;
+    height: calc(50% - 40px);
+}
+
+#material_config_bar {
+    bottom: 0; 
+    left: 0;
+    height: calc(10px);
+}
+
+#part_config_bar {
+    top: 40px; 
+    right: 0; 
+    height: calc(100% - 40px); 
 }
 
 .sidebarSection {
@@ -77,18 +68,6 @@
     box-sizing: border-box;
 }
 
-#sidebar {
-    z-index: 100; 
-    position: absolute; 
-    right: 0; 
-    top: 40px; 
-    width: 250px; 
-    height: calc(100% - 40px); 
-    background-color: rgb(20, 20, 20); 
-    overflow-y: auto;
-    border: 1px gray solid;
-}
-
 .subSection {
     background-color: rgb(20, 20, 20)
 }
@@ -96,6 +75,27 @@
 .headerSection {
     background-color: rgb(50, 50, 50)
 }
+
+
+
+.materialButton {
+    width: 50px;
+    height: 50px;
+    border: 1px solid darkgrey;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.modelButton {
+    width: 100%;
+    height: 20px;
+    border: 1px solid darkgrey;
+    text-align: center;
+    color: white;
+    font-family: sans-serif;
+}
+
+
 
 textarea {
     margin: 0;
@@ -106,11 +106,6 @@ textarea {
     resize: none;
     color: white;
     overflow: hidden;
-}
-
-.materialBtn {
-    width: 80%; 
-    margin: 10%
 }
 
 hr {
