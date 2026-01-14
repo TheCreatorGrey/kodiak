@@ -1,0 +1,38 @@
+represent pixels by their change from the previous pixel
+
+small changes would be most common, especially for textures like bricks
+
+how do you store smaller numbers with less space, and larger numbers with more?
+
+value of:
+0 to 1 - 1 bit
+2 to 4
+
+how do you store two smaller numbers in a larger number?
+
+
+maybe you could reserve the darkest or lightest ranges (0-10 or 245-255)
+for signals about following data?
+
+perhaps the color of a pixel could be represented by a hue value from 0 to 255^2
+the byte for the pixel would be the difference in hue from the previous pixel
+there would be a signal indicating that a following pixel is above the 255 limit,
+and two bytes should be used to represent the difference
+
+but not all colors can be represented by hue. that's why there is also saturation and value in HSV
+
+
+I think I'll try to store each channel of a pixel in separate grayscale images that follow eachother in the file
+such as red, green, blue, alpha, height, roughness
+At the beginning of the texture, which of these channels and in what order could be specified, since not all textures
+will need alpha, height, roughness or even some of the color channels
+An all green image would only need one channel, the green channel. Maybe I add an option for a grayscale channel too
+
+I need to find a way to simply compress a grayscale image using 8 bit unsigned integers
+As I said before most textures will not have too much difference in brightness between pixels
+Maybe I could fit most difference in brightness values in 4 bit unsigned integers, allowing for
+difference up to 16. Not really though since it would need to support negative difference. If I just subtracted
+8 and got a range of -8 to 8, that probably wouldnt be enough unless I reduced the color depth. That would
+be a cheap way to reduce size but it isn't really compression, just a reduction in quality
+
+1010

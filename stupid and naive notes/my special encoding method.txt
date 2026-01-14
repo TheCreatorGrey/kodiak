@@ -1,0 +1,74 @@
+I decided not to use the common methods since extremely large or extremely precise numbers dont need to be represented. 
+I don't know if this has been done before, but this is the method I came up with:
+
+
+
+Given a whole, non-negative number from 0 to 255^2, represented by n
+
+If we divide the number by 255 (range that can be represented by a single byte), 
+we can take the floor of the result (the result without the remainder) and the remainder
+and get two numbers within that range, which can be stored in two bytes, b1 and b2.
+
+b1 = floor(n / 255)
+b2 = n % 255
+
+We can get the original number back by doing the reverse:
+
+(b1 * 255) + b2
+
+
+Alright, cool. We can store an non-negative whole number in two bytes, encode and decode it using quick 
+and simple math, but we still need to store floating point values. To do this, we can separate the integer 
+and fractional parts of the value, or the parts before and after the decimal point. To do this, we can get 
+the integer part by flooring the value and the fractional part by subtracting the value by the floor of itself.
+
+int = floor(n)
+frac = n - int
+
+We can use the method I went over before with the integer part easily, but the fraction is still a fraction.
+To get the fraction to be within the supported range, we can simply multiply it by said range, or 255^2.
+
+n * (255^2)
+
+This will not result in a whole number, but anything after the decimal point here is excessive precision. After
+we round the result, we get something that can be stored using the method mentioned before. When both parts are
+decoded, the fractional part can be divided by 255^2 and added to the whole part to get the original value, like
+this:
+
+original = decoded_whole + (decoded_frac * (255^2))
+
+
+
+
+
+
+
+
+
+
+
+
+to simply represent a number from 0 to 1 (used for vertices in meshes),
+the same method above is used. This allows for precision of 1/255^2 or 0.000015379. This should be plenty, even for detailed meshes.
+
+Lets say one of the position values for a vertex was 0.9999847.
+We can multiply this number so it fits in the range supported:
+0.9999847 * (255^2) = 65024.0051175
+
+We can round the result as everything past the decimal point is 
+excessive precision. After storing the result using the method
+described above, we can convert it back to the original by simply
+dividing it by 255^2.
+
+65024(255^2) = 0.999984621
+
+This is not exact, but it does allow for precision to the two-hundred-
+and-fifty-fiftieth, 0.000015379, or a little over a thousanth of a millimeter
+if 1 unit in digital space represents a meter. This should be plenty for 
+even the most detailed meshes.
+
+
+I later realized that 255 should be used for the calculations instead of 256 because the range is from 0-255,
+not 1-256. I replaced 256 with 255 in these notes so some of it might still be incorrect. I don't really know
+what I'm doing, but this method seems just as efficient as any common method. Or maybe its the exact same as
+the common method, I wouldn't know because the complexity of the papers scared me away.

@@ -1,0 +1,45 @@
+{
+    "version":2,
+    "title":"Empty",
+    "assets": {
+        "materials": {
+            "testmat": {
+                "textures": {
+                    "diffuse": "/kodiak/assets/textures/plain_color_tile.png"
+                },
+                "tint": [
+                    255,
+                    255,
+                    255
+                ],
+                "stretch": false,
+                "scale": 1,
+                "shading":true
+            }
+        },
+        "models":[]
+    },
+    "space": {
+        "objects": {
+            "Test": {
+                "position": [
+                    0,
+                    0.8,
+                    0
+                ],
+                "scale": [
+                    0.8,
+                    1.8,
+                    0.8
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "material": "testmat",
+                "model":0
+            }
+        }
+    }
+}

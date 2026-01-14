@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="gobble" style="">
+
+    </div>
+    <script>
+        var file = document.body.dataTransfer.files[0],
+        reader = new FileReader();
+        reader.onload = function (event) {
+            console.log(event.target.result);
+            //holder.style.background = 'url(' + event.target.result + ') no-repeat center';
+
+        };
+        console.log(reader.readAsDataURL(file));
+        
+    </script>
+</body>
+</html>

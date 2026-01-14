@@ -29,38 +29,65 @@
 	<canvas id="renderCanvas"></canvas>
 
 	<script>
-        const canvas = document.getElementById("renderCanvas"); // Get the canvas element
-        const engine = new BABYLON.Engine(canvas, true); // Generate the BABYLON 3D engine
-        const createScene = function () {
-            // This creates a basic Babylon Scene object (non-mesh)
-            const scene = new BABYLON.Scene(engine);
-            // This creates and positions a free camera (non-mesh)
-            const camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
-            // This targets the camera to scene origin
-            camera.setTarget(BABYLON.Vector3.Zero());
-            // This attaches the camera to the canvas
-            camera.attachControl(canvas, true);
-            // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-            // Default intensity is 1. Let's dim the light a small amount
-            light.intensity = 0.7;
-            // Our built-in 'sphere' shape.
-            const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 2, segments: 32}, scene);
-            // Move the sphere upward 1/2 its height
-            sphere.position.y = 1;
-            // Our built-in 'ground' shape.
-            const ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 6, height: 6}, scene);
-            return scene;
-        };
-        const scene = createScene(); //Call the createScene function
-        // Register a render loop to repeatedly render the scene
-        engine.runRenderLoop(function () {
-                scene.render();
-        });
-        // Watch for browser/canvas resize events
-        window.addEventListener("resize", function () {
-                engine.resize();
-        });
+        // Encodes a nonnegative whole number between 0 and 255^2. Returns two bytes
+        function encode_whole_number(num) {
+            let byte1 = Math.floor(num / 255);
+            let byte2 = num % 255
+
+            return [byte1, byte2]
+        }
+
+        // Encodes a number within a specified range. Precision equal to (most-least)/(255^2)
+        function encode_custom_range(num, least, most) {
+            let value = num
+
+            // Clamp values
+            if (value < (least)) {
+                console.log(`Value ${value} is below minumum ${least}`)
+                value = least
+            }
+            if (value > (most)) {
+                console.log(`Value ${value} is above maximum ${most}`)
+                value = most
+            }
+
+            value -= least // Will offset the value so it will not be below zero (if the value is actually in range)
+            let from_zero_maximum = most-least // The new maximum value after being offset
+
+            // Expand to the supported range of 255^2
+            value *= (Math.pow(255, 2) / from_zero_maximum)
+
+            // Any unsupported precision is rounded off
+            // For this, whole number encoding is used which takes two bytes and can encode any whole number from 0 to 255^2
+            // I could have decided to use the 4 byte encode num which supports even more precision, but this would be excessive
+            // since even a range of 0 to 100 would have a precision of 10/255^2 or ~0.0015. Seems like plenty to me
+            return encode_whole_number(Math.round(value))
+        }
+
+        // Decodes a nonnegative whole number from two bytes
+        function decode_whole_number(byte1, byte2) {
+            return (byte1 * 255) + byte2
+        }
+
+        // Decodes a number within a specified range
+        function decode_custom_range(byte_pair, least, most) {
+            let value = decode_whole_number(byte_pair[0], byte_pair[1])
+            
+            let from_zero_maximum = most-least // The maximum value if the range is offset to be above zero
+
+            // Encoded value is still within the supported range of 256^2
+            // Crunch it back down to the original range
+            value /= (Math.pow(255, 2) / from_zero_maximum)
+
+            value += least // Offset value back to the original minumum
+
+            return value
+        }
+
+        let encoded = encode_custom_range(0.5, -0.5, 0.5)
+        let decoded = decode_custom_range([encoded[0], encoded[1]], -0.5, 0.5)
+
+        console.log(encoded, decoded)
 	</script>
 
    </body>
