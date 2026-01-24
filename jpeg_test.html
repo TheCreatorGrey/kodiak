@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById("canvas")
+        document.body.appendChild(canvas)
+        canvas.width = 64
+        canvas.height = 64
+        canvas.style.width = "500px"
+        canvas.style.height = "500px"
+
+        let ctx = canvas.getContext("2d");
+        for (let x=0; x<64; x++) {
+            for (let y=0; y<64; y++) {
+                let chunk_x = Math.floor(x/8)
+                let chunk_y = Math.floor(y/8)
+
+                let chunk_px_x = x%8
+                let chunk_px_y = y%8
+
+                let value = Math.cos(chunk_px_x*(Math.PI/8)*(chunk_x))
+                value *= Math.cos(chunk_px_y*(Math.PI/8)*(chunk_y))
+                value += 1
+                value /= 2
+                value *= 255
+
+
+                value = 255
+                value *= Math.cos(((2 * chunk_px_x + 1) * chunk_x * Math.PI) / (2 * 8))
+                value *= Math.cos(((2 * chunk_px_y + 1) * chunk_y * Math.PI) / (2 * 8))
+
+
+                ctx.fillStyle = `rgb(${value}, ${value}, ${value})`
+                ctx.fillRect(x, y, 1, 1)
+
+                if (chunk_px_x === 0 || chunk_px_y === 0) {
+                    ctx.fillStyle = `rgb(255, ${value}, ${value})`
+                    ctx.fillRect(x, y, 1, 1)
+                }
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // Example quantization table (luminance-like shape, quantizes higher frequencies more aggressively)
+        let q = [
+        [16,11,10,16,24,40,51,61],
+        [12,12,14,19,26,58,60,55],
+        [14,13,16,24,40,57,69,56],
+        [14,17,22,29,51,87,80,62],
+        [18,22,37,56,68,109,103,77],
+        [24,35,55,64,81,104,113,92],
+        [49,64,78,87,103,121,120,101],
+        [72,92,95,98,112,100,103,99]
+        ]
+
+
+
+
+        const chunk_width = 8
+        const chunk_height = 8
+
+        //print(random.randrange(0, 255))
+
+        let block = Array.from({ length: chunk_width }, () => new Array(chunk_height).fill(255));
+
+        // Block modification
+        for (let k=0; k<chunk_width; k++) {
+            for (let l=0; l<chunk_height; l++) {
+                //block[k][l] *= Math.random()
+                block[k][l] *= k/8
+            }
+        }
+
+        // Takes an array of coefficients from the DCT algorithm and compresses it using a simple algorithm
+        function compressCoefficients(coefficients) {
+            let output = [];
+            let zero_run = 0;
+
+            for (let c of coefficients) {
+                if (c === 0) { // Coefficient is zero, the most common. BEWARE OF NEGATIVE ZEROES.
+                    zero_run++
+                } else {
+                    if (0 < zero_run) { // If there is a run of zeroes, seal it off and reset
+                        output.push(zero_run+64)
+                        zero_run = 0
+                    }
+
+                    if (c < 0) { // Coefficient ranges from -64 to -1
+                        output.push(c+64)
+                    } else if (0 < c) { // Coefficient ranges from 1 to 64
+                        output.push(c+127)
+                    }
+                }
+            }
+            
+            // Any runs of zeroes at the end of the array will not be stored since the else condition would not be activated
+            // This is fine because the de-compressor assumes any information that is not filled in is zero, this also makes
+            // the system slightly more efficient because it saves one byte for every block with a run of zeroes at the end 
+            // of its array
+
+            return output
+        }
+
+        // Reverse of above
+        function decompressCoefficients(compressed) {
+            let coefficients = [];
+
+            for (let byte of compressed) {
+                if (byte < 64) {
+                    coefficients.push(byte-64)
+                }
+
+                if (64 <= byte && byte < 128) {
+                    let zero_run_length = byte-64
+                    for (let r=0; r<zero_run_length; r++) {
+                        coefficients.push(0)
+                    }
+                }
+
+                if (128 <= byte && byte < 192) {
+                    coefficients.push(byte-127)
+                }
+            }
+
+            // As mentioned in the compressor, runs of zeros at the ends of arrays of coefficients are not stored
+            // because the decompressor (this) will fill any missing data with zeroes anyways
+            let missing_coeffs = 64-coefficients.length;
+            for (let i=0; i<missing_coeffs; i++) {
+                coefficients.push(0)
+            }
+
+            return coefficients
+        }
+
+        console.log(decompressCoefficients(compressCoefficients([-16, -15, -14, -13, -12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 64, -64])))
+
+
+        function compressDCT(block, chunk_width=8, chunk_height=8) {
+            let coefficients = Array.from({ length: chunk_width }, () => new Array(chunk_height).fill(0))
+
+            // !!! LOOK OUT! SCARY DCT ALGORITHM BELOW!!!
+
+            // Ok look I'm a highschool student but I'm gonna try my best to explain something I don't fully understand
+
+            // Here goes
+
+            // If you're unfamiliar with DCT, its the idea that any wave can be broken down and reconstructed using cosine waves of different frequencies and amplitudes
+            // A row of pixels can be thought of as a wave, and a 2D grid of pixels can be thought of as multiple waves stacked on top of eachother.
+            // We can compare an 8x8 grid of pixels to a bunch of 2D DCT basis functions (which can also be represented by a grid of 8x8) with different 
+            // frequencies of cos waves and find which ones contribute to the chunk of pixels and how much. Numbers (coefficients) referring to the amount 
+            // that a basis function contrubutes to a given chunk of pixels is enough to reconstruct it.
+
+            // The 2D DCT basis functions can be represented by grids of 8x8 within a larger 8x8 grid of 64 basis functions.
+            // The values in the grids of each function are sampled from cosine waves. The frequency of those waves are
+            // higher depending on the position of the function grid within the larger basis function table.
+            // If you've ever seen a table of DCT basis functions, you can imagine this as iterating through each of the squares representing the frequencies
+
+            // !! The basis functions are not actually stored as grids !!, but can be imagined as such. The values in the "grid" of a function can be found using math.
+            // Hopefully my explanation didn't make it more confusing
+            // If my explanation sucks, consult Mr. Wikipedia https://en.wikipedia.org/wiki/Discrete_cosine_transform
+            // Or you could just go to the website that I got this algorithm from https://thelinuxcode.com/discrete-cosine-transform-algorithm-and-program-a-practical-code-ready-guide/
+
+            // This iterates through an 8x8 grid which can represent the 64 2D DCT basis functions, each with progressively higher cosine frequencies on each axis
+            for (let i=0; i<chunk_width; i++) {
+                for (let j=0; j<chunk_height; j++) {
+                    // The sum, which is how much the DCT basis function contributes to the block of pixels
+                    let sum = 0.0
+
+                    // The sum is scaled by these values
+                    // For some reason the functions at i=0 and j=0 are scaled differently, I don't know why
+                    let ci, cj;
+                    if (i === 0) {
+                        ci = 1 / Math.sqrt(chunk_width)
+                    } else {
+                        ci = Math.sqrt(2) / Math.sqrt(chunk_width)
+                    }
+                    if (j === 0) {
+                        cj = 1 / Math.sqrt(chunk_height)
+                    } else {
+                        cj = Math.sqrt(2) / Math.sqrt(chunk_height)
+                    }      
+
+                    // Compare each pixel in the block with the values of the DCT function based on i and j
+                    for (let x=0; x<chunk_width; x++) {
+                        for (let y=0; y<chunk_height; y++) {
+                            // The original pixel value (minus 128 so that it is centered around zero, ranging from -128 to 128 for a 0-255 original value)
+                            let term = block[x][y]-128
+
+                            // Cos ranges from -1 to 1
+
+                            // k = the x position of the pixel in the image chunk
+                            // l = the y position of the pixel in the image chunk
+                            // i = the x frequency of the function / where the basis function would be on the x axis if it was on a table
+                            // j = the y frequency of the function / where the basis function would be on the y axis if it was on a table
+                            // chunk_width and chunk_height are the width and height of the size of a chunk of pixels
+
+                            // The pixel value is multiplied by a point on the 2D DCT base function on each axis
+                            term *= Math.cos(((2 * x + 1) * i * Math.PI) / (2 * chunk_width))
+                            term *= Math.cos(((2 * y + 1) * j * Math.PI) / (2 * chunk_height))
+
+                            // More pixel values that align with the points on the functions they are compared to means
+                            // that the function contributes more to the chunk of pixels
+                            sum += term
+                        }
+                    }
+
+
+                    let coefficient = ci * cj * sum
+                    //console.log(sum)
+
+                    let quantized = Math.round(coefficient / q[i][j])
+
+                    // Quantized are rarely above 64 or below -64, but clamp just in case
+                    if (64 < quantized) {
+                        quantized = 64
+                    } else if (quantized < -64) {
+                        quantized = -64
+                    }
+
+                    coefficients[i][j] = quantized
+                }
+            }
+
+            // Now we have a 2D array of coefficients
+
+            return coefficients
+        }
+
+
+        function decompressDCT(compressed, chunk_width=8, chunk_height=8) {
+            let decompressed = new Array(chunk_width*chunk_height).fill(0)
+
+            for (let k=0; k<chunk_width; k++) {
+                for (let l=0; l<chunk_height; l++) {
+
+                    let sum = 0.0;
+
+                    // Apply function and amount
+                    for (let i=0; i<chunk_height; i++) {
+                        for (let j=0; j<chunk_width; j++) {
+                            let ci, cj;
+                            if (i === 0) {
+                                ci = 1 / Math.sqrt(chunk_width)
+                            } else {
+                                ci = Math.sqrt(2) / Math.sqrt(chunk_width)
+                            }
+                            if (j === 0) {
+                                cj = 1 / Math.sqrt(chunk_height)
+                            } else {
+                                cj = Math.sqrt(2) / Math.sqrt(chunk_height)
+                            }
+                                        // Compressed array is flat, so index is found from i and j (x and y)
+                            let term = compressed[(j*chunk_width)+i] * q[i][j] * ci * cj
+                            term *= Math.cos(((2 * k + 1) * i * Math.PI) / (2 * chunk_width))
+                            term *= Math.cos(((2 * l + 1) * j * Math.PI) / (2 * chunk_height))
+
+                            sum += term
+                        }
+                    }
+
+                    // Should be close to the pixel before it was compressed
+                    // The decompressed array should be flat, so k and l (x and y) should be converted to an index
+                    decompressed[(k*chunk_width)+l] = Math.round(sum+128)
+                }
+            }
+
+            return decompressed
+        }
+
+
+        let coeff = compressDCT(block)
+        console.log(coeff)
+
+        let compressed_coeffs = compressCoefficients(coeff.flat())
+        console.log(compressed_coeffs)
+
+        let decompressed_coeffs = decompressCoefficients(compressed_coeffs);
+        console.log(decompressed_coeffs)
+
+        let decompressed = decompressDCT(decompressed_coeffs)
+        console.log(decompressed)
+
+        // Draw compressed
+        for (let x=0; x<chunk_width; x++) {
+            for (let y=0; y<chunk_width; y++) {
+                ctx.fillStyle = `rgb(0, ${decompressed[(y*chunk_width)+x]}, 0)`
+                ctx.fillRect(x, y, 1, 1)
+            }
+        }
+
+        // Draw uncompressed for comparison
+        for (let x=0; x<chunk_width; x++) {
+            for (let y=0; y<chunk_width; y++) {
+                ctx.fillStyle = `rgb(0, ${block[x][y]}, 0)`
+                ctx.fillRect(x+chunk_width, y, 1, 1)
+            }
+        }
+    </script>
+</body>
+</html>

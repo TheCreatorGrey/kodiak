@@ -1,91 +1,70 @@
 {
-    "assets":{
-        "materials":{
-            "wood":{
-                "textures":{
-                    "diffuse":"https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/wood_table_worn/wood_table_worn_diff_1k.png",
-                    "normal":"https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/wood_table_worn/wood_table_worn_nor_gl_1k.png",
-                    "rough":"https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/wood_table_worn/wood_table_worn_rough_1k.png"
-                },
-
-                "tint":[255, 255, 255],
-                "stretch":false,
-                "scale":1
-            },
-
-            "wooden floor":{
-                "textures":{
-                    "diffuse":"https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/wood_floor/wood_floor_diff_1k.png"
-                },
-
-                "tint":[255, 255, 255],
-                "stretch":false,
-                "scale":6
-            },
-
-            "dirt":{
-                "textures":{
-                    "diffuse":"https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/forrest_ground_01/forrest_ground_01_diff_1k.png"
-                },
-
-                "tint":[255, 255, 255],
-                "stretch":false,
-                "scale":6
-            },
-
-            "blinds":{
-                "textures":{
-                    "diffuse":"/studio/assets/window.png"
-                },
-
-                "tint":[255, 255, 255],
-                "stretch":true,
-                "scale":1
-            }
-        }
+    "version":2,
+    "title":"Kodiak Template",
+    "assets": {
+        "materials": [],
+        "models":[]
     },
-
-    "space":{
-        "parts":{
-            "a":{
-                "position":[0, -32, 0], 
-                "scale":[2048, 64, 2048], 
-                "rotation":[0, 0, 0], 
-                "material":"dirt",
-
-                "responses":{
-                    "loop":[
-                        {
-                            "event":"iterate",
-                            "property":"rotation",
-                            "subproperty":1,
-                            "value":"1"
-                        },
-
-                        {
-                            "event":"iterate",
-                            "property":"position",
-                            "subproperty":1,
-                            "value":"1"
-                        }
-                    ]
-                }
+    "space": {
+        "objects": {
+            "Skybox": {
+                "position": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    16384,
+                    16384,
+                    16384
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "material": 0,
+                "model":9
             },
 
-            "b":{
-                "position":[0, 3, 0], 
-                "scale":[2, 6, 2], 
-                "rotation":[0, 0, 0], 
-                "material":"wooden floor",
+            "Ground": {
+                "position": [
+                    0,
+                    -32,
+                    0
+                ],
+                "scale": [
+                    2048,
+                    64,
+                    2048
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "material": 1,
+                "model":10
+            },
 
-                "responses":{
-                    "touched":[
-                        {
-                            "event":"send",
-                            "value":"loop"
-                        }
-                    ]
-                }
+            "Person Size Reference": {
+                "position": [
+                    0,
+                    0.8,
+                    0
+                ],
+                "scale": [
+                    0.8,
+                    1.8,
+                    0.8
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "material": 1,
+                "model":0
             }
         }
     }

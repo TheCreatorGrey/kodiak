@@ -1,0 +1,18 @@
+Huffman coding won't work well with an encoder that handles data in the format of 8 bit unsigned integers, so I'll try to find another way
+
+Quantized coefficients are rarely above 64 or below -64, but will be clamped just in case
+
+The range of 0-255 that a byte can represent can be
+cut up into chunks
+
+Since 0s are the most common, a range can be used to
+represent a run of 0s
+Since blocks are 8x8 at largest, there will be at
+most 64 coefficients at most, and 64 zeros at most
+if all of the coefficients are zeroes
+
+0-63 means there is a negative value from -64 to -1
+64-127 means there is a zero repeated 1-64 times
+128-191 means there is a positive value from 1 to 64
+
+What do I do with the remaining 192-255?

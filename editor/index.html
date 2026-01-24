@@ -43,36 +43,17 @@
 
 	<canvas id="canvas" class="editorCanvas"></canvas>
 
+	<div id="progress_popup" hidden="true">
+		<div id="progress_text">Loading...</div>
+		<div id="progress_bar"></div>
+	</div>
+
 
 	<div id="material_list_bar" class="sidebar"></div>
 	<div id="model_list_bar" class="sidebar"></div>
 
-	<div id="material_config_bar" class="sidebar">
-		<div class="sidebarSection">Textures:</div>
-		<div class="sidebarSection subSection">
-		<span>
-			Diffuse: <textarea id="material_diffuse_input" cols="20" rows="1"></textarea>
-			Normal: <textarea id="input-source-norm" cols="20" rows="1"></textarea>
-			Rough: <textarea id="input-source-rough" cols="20" rows="1"></textarea>
-		</span>
-		</div>
-
-		<div class="sidebarSection">UVs:</div>
-		<div class="sidebarSection subSection">
-		<span>
-			Scale: <textarea id="material_scale" cols="20" rows="1"></textarea><br>
-			<input type="checkbox" id="material_texture_stretch"> Stretch Textures
-		</span>
-		</div>
-
-		<div class="sidebarSection">Tint:</div>
-		<div class="sidebarSection subSection">
-		<span>
-			r: <textarea id="material_tint_r_input" cols="3" rows="1"></textarea>
-			g: <textarea id="material_tint_g_input" cols="3" rows="1"></textarea>
-			b: <textarea id="material_tint_b_input" cols="3" rows="1"></textarea>
-		</span>
-		</div>
+	<div id="material_model_config_bar" class="sidebar">
+		<div class="sidebarSection subSection">Right click a material or model to configure it here</div>
 	</div>
 
 	<div id="object_config_bar" class="sidebar">

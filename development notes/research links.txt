@@ -1,0 +1,15 @@
+Links I used to research the below topics for this project
+
+Wavefront files:
+https://en.wikipedia.org/wiki/Wavefront_.obj_file
+
+JPEG and Discrete Cosine Transform:
+https://en.wikipedia.org/wiki/JPEG
+https://www.youtube.com/watch?v=Q2aEzeMDHMA&pp=0gcJCU8KAYcqIYzv
+https://www.youtube.com/watch?v=DS8N8cFVd-E&t=187s&pp=0gcJCU8KAYcqIYzv
+https://www.youtube.com/watch?v=PcYFnVBS_bg&t=611s
+https://www.youtube.com/watch?v=OWIU_BMA92s
+https://www.youtube.com/watch?v=0me3guauqOU&t=665s
+https://en.wikipedia.org/wiki/Discrete_cosine_transform
+https://www.geeksforgeeks.org/dsa/discrete-cosine-transform-algorithm-program/
+https://thelinuxcode.com/discrete-cosine-transform-algorithm-and-program-a-practical-code-ready-guide/

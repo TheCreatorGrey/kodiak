@@ -1,3 +1,5 @@
+
+
 I decided not to use the common methods since extremely large or extremely precise numbers dont need to be represented. 
 I don't know if this has been done before, but this is the method I came up with:
 
@@ -72,3 +74,38 @@ I later realized that 255 should be used for the calculations instead of 256 bec
 not 1-256. I replaced 256 with 255 in these notes so some of it might still be incorrect. I don't really know
 what I'm doing, but this method seems just as efficient as any common method. Or maybe its the exact same as
 the common method, I wouldn't know because the complexity of the papers scared me away.
+
+
+
+
+
+I've come back (making V3 now) and thought about writing code that can encode an unsigned integer given a range of
+bytes, and the range that it could encode would depend on how many bytes the function was allowed to encode, instead
+of separate functions for different ranges. 255^2 was enough, but now I've found that I need to support greater ranges.
+
+I basically need to convert the number to base 256.
+I'll try 1 million while thinking of a way to do that
+
+1,000,000 / 255 = 3921.568627451
+It fits 3921 times with .568627451*255 (145) left over
+I just realized I could use modulus for this.
+Maybe if I stored the remainders?
+Let's do it again
+
+3921 % 255 = 6
+if I continued further, I would get zero because 6 can already be represented by a single byte.
+I've turned this into numbers that can be represented by bytes, so how do I reverse this?
+
+I have something wrong. I'll start over
+
+If I take the floor of 1m divided by 255 and the modulus of 1m and 255,
+I get two numbers: one that I can multiply by 255 and add to the second one to get the original number
+I have 3921 and 145
+The second one fits, the first does not. Lets repeat it
+I get 15 and 96. Both fit.
+
+Ok so I think I might be able to multiply these bumbers by 255 to the power of their position. Lets try
+(15×(255^2)) + (96×255) + 145 = 1000000
+
+Holy shit... thats cool
+

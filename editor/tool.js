@@ -250,10 +250,6 @@ export class Tool {
 
                 document.getElementById(m).value = val;
             }
-
-            document.getElementById(`material_tint_r_input`).value = this.world.data.assets.materials[object.material].tint[0] * 255;
-            document.getElementById(`material_tint_g_input`).value = this.world.data.assets.materials[object.material].tint[1] * 255;
-            document.getElementById(`material_tint_b_input`).value = this.world.data.assets.materials[object.material].tint[2] * 255;
         } else {
             //document.getElementById('sidebar').style.display = 'none';
 

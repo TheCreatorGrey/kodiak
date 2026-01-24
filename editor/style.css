@@ -6,6 +6,7 @@
     font-size: 20px;
     margin: 0;
     height: 100%;
+    vertical-align: middle;
 }
 
 .menuSection {
@@ -35,19 +36,19 @@
 #material_list_bar {
     top: 40px; 
     left: 0;
-    height: 50%;
+    height: 37.5%;
 }
 
 #model_list_bar {
-    bottom: 0; 
+    top: calc(37.5% + 40px); 
     left: 0;
-    height: calc(50% - 40px);
+    height: calc(37.5% - 40px);
 }
 
-#material_config_bar {
+#material_model_config_bar {
     bottom: 0; 
     left: 0;
-    height: calc(10px);
+    height: 25%;
 }
 
 #object_config_bar {
@@ -72,6 +73,12 @@
     background-color: rgb(20, 20, 20)
 }
 
+.subSection textarea {
+    width: 40px;
+    height: 16px;
+    margin-left: 5px;
+}
+
 .headerSection {
     background-color: rgb(50, 50, 50)
 }
@@ -91,7 +98,7 @@
 
 textarea {
     margin: 0;
-    vertical-align: bottom;
+    vertical-align: middle;
     border: 0;
     background-color: gray;
     border-radius: 2px;
@@ -102,4 +109,29 @@ textarea {
 
 hr {
     border-color: gray;
+}
+
+
+
+#progress_popup {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    z-index: 10;
+    background-color: rgba(0, 0, 0, .8);
+    border: 1px solid grey;
+    border-radius: 2px;
+    width: 300px;
+    padding: 20px;
+}
+
+#progress_popup #progress_text {
+    color: white;
+    font-family: sans-serif;
+}
+
+#progress_popup #progress_bar {
+    height: 20px;
+    background-color: greenyellow;
 }

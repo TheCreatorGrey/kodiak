@@ -15,9 +15,9 @@ export async function convertXML(world, filename) {
 
 
     // Load Roblox primitives
-    await world.importModel("/kodiak/3rdparty/roblox/shapes/cylinder.obj", "roblox_cylinder");
-    await world.importModel("/kodiak/3rdparty/roblox/shapes/wedge.obj", "roblox_wedge");
-    await world.importModel("/kodiak/3rdparty/roblox/shapes/cornerwedge.obj", "roblox_cornerwedge");
+    await world.importModelByURL("/kodiak/3rdparty/roblox/shapes/cylinder.obj", "roblox_cylinder");
+    await world.importModelByURL("/kodiak/3rdparty/roblox/shapes/wedge.obj", "roblox_wedge");
+    await world.importModelByURL("/kodiak/3rdparty/roblox/shapes/cornerwedge.obj", "roblox_cornerwedge");
 
 
     let special_parts = xml.getElementsByClassName("WedgePart");
@@ -47,6 +47,7 @@ export async function convertXML(world, filename) {
 
     let parts = xml.getElementsByClassName("Part");
 
+    let parts_iterated = 0;
     for (let part of parts) {
         let properties = part.firstElementChild;
 
@@ -308,18 +309,22 @@ export async function convertXML(world, filename) {
         new_object.rotation[2] = transform.rotation[2];
 
         let kodiak_material_name = `Roblox ${material_name} (${r},${g},${b})`;
+        let mat_id = world.getMaterialIDByName(kodiak_material_name)
 
-        if (! (kodiak_material_name in world.data.assets.materials)) {
-            let object_mat = world.newMaterial(kodiak_material_name);
-            object_mat.textures.diffuse = `../3rdparty/roblox/materials/${material_name}/color.png`;
+        if (!mat_id) {
+            mat_id = await world.importMaterialByURL(`../3rdparty/roblox/materials/${material_name}/color.png`, kodiak_material_name);
+            let object_mat = world.materials[mat_id];
             object_mat.tint = [r, g, b];
             object_mat.stretch = false;
             object_mat.scale = [.2/scale_factor, .2/scale_factor]
         }
 
-        new_object.material = kodiak_material_name;
+        new_object.material = mat_id;
         new_object.model = world.getModelIDByName(model_name)
 
         world.manifest(new_object_id);
+
+        updateProgress("Importing RBXMX", "parts", parts_iterated, parts.length)
+        parts_iterated++
     }
 }
