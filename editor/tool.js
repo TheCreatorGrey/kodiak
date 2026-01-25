@@ -1,58 +1,6 @@
 import * as THREE from "three";
 
 
-
-// object attributes associated with the IDs of input boxes
-export const map = {
-    'input-pos-x': {
-        'attr': 'position',
-        'subattr': 'x'
-    },
-
-    'input-pos-y': {
-        'attr': 'position',
-        'subattr': 'y'
-    },
-
-    'input-pos-z': {
-        'attr': 'position',
-        'subattr': 'z'
-    },
-
-    'input-scl-x': {
-        'attr': 'scale',
-        'subattr': 'x'
-    },
-
-    'input-scl-y': {
-        'attr': 'scale',
-        'subattr': 'y'
-    },
-
-    'input-scl-z': {
-        'attr': 'scale',
-        'subattr': 'z'
-    },
-
-    'input-ro-x': {
-        'attr': 'rotation',
-        'subattr': 'x'
-    },
-
-    'input-ro-y': {
-        'attr': 'rotation',
-        'subattr': 'y'
-    },
-
-    'input-ro-z': {
-        'attr': 'rotation',
-        'subattr': 'z'
-    },
-}
-
-
-
-
 export function cast(world, origin, direction, length, target) {
     world.raycaster.far = length;
 
@@ -241,15 +189,17 @@ export class Tool {
             this.z1.object.position.z = object.position[2] + (object.scale[2] / 2);
             this.z2.object.position.z = object.position[2] - (object.scale[2] / 2);
 
-            for (let m in map) {
-                let val = object[map[m].attr][map[m].subattr];
+            document.getElementById("input-pos-x").value = object.position[0]
+            document.getElementById("input-pos-y").value = object.position[1]
+            document.getElementById("input-pos-z").value = object.position[2]
 
-                if (map[m].attr === 'rotation') {
-                    val /= Math.PI / 180;
-                }
+            document.getElementById("input-scl-x").value = object.scale[0]
+            document.getElementById("input-scl-y").value = object.scale[1]
+            document.getElementById("input-scl-z").value = object.scale[2]
 
-                document.getElementById(m).value = val;
-            }
+            document.getElementById("input-ro-x").value = object.rotation[0] / Math.PI / 180
+            document.getElementById("input-ro-y").value = object.rotation[1] / Math.PI / 180
+            document.getElementById("input-ro-z").value = object.rotation[2] / Math.PI / 180
         } else {
             //document.getElementById('sidebar').style.display = 'none';
 
@@ -380,5 +330,9 @@ export class Tool {
 
             this.world.manifest(this.selected_object_id)
         }
+    }
+
+    getSelectedObject() {
+        return this.world.getObjectByID(this.selected_object_id)
     }
 }

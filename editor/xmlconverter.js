@@ -1,6 +1,6 @@
 import { RM2EA } from "../bridge.js";
 
-export async function convertXML(world, filename) {
+export async function convertXML(world, filename, onprogress) {
     let request = await fetch(filename);
     let text = await request.text();
 
@@ -312,7 +312,7 @@ export async function convertXML(world, filename) {
         let mat_id = world.getMaterialIDByName(kodiak_material_name)
 
         if (!mat_id) {
-            mat_id = await world.importMaterialByURL(`../3rdparty/roblox/materials/${material_name}/color.png`, kodiak_material_name);
+            mat_id = await world.importMaterialByURL(`../3rdparty/roblox/materials/${material_name}/color.png`, kodiak_material_name, 8);
             let object_mat = world.materials[mat_id];
             object_mat.tint = [r, g, b];
             object_mat.stretch = false;
@@ -324,7 +324,11 @@ export async function convertXML(world, filename) {
 
         world.manifest(new_object_id);
 
-        updateProgress("Importing RBXMX", "parts", parts_iterated, parts.length)
+        if (onprogress) {
+            await onprogress(parts_iterated, parts.length)
+        }
+
+        //updateProgress("Importing RBXMX", "parts", parts_iterated, parts.length)
         parts_iterated++
     }
 }

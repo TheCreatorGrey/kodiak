@@ -24,6 +24,10 @@ export async function updateProgress(task_name, unit_name, progress, total) {
     await sleep(0)
 }
 
+export function closeProgressBar() {
+    progress_popup.hidden = true
+}
+
 export function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -63,7 +67,7 @@ const utf8encoder = new TextEncoder();
 
 
 
-// A simple object for handling byte arrays byte by byte, chunk by chunk
+// A simple class for handling byte arrays byte by byte, chunk by chunk
 class ByteHandler {
     constructor(data_arr) {
         this.data_arr = data_arr
@@ -80,6 +84,365 @@ class ByteHandler {
         return this.data_arr.slice(this.scroll-len, this.scroll)
     }
 }
+
+
+// There's way too much code in this alone to put in the World class; hopefully separating it lessens confusion
+export class DCTEncoder {
+    constructor() {
+        // Cos calculations needed for the DCT algorithm would slow down encoding, so pre-calculate and put into arrays instead (seriously it cuts the encoding time in half)
+        this.enc_precalculate_x = Array.from(Array(8), () => new Array(8))
+        for (let func_x=0; func_x<8; func_x++) {
+            for (let px_x=0; px_x<8; px_x++) {
+                this.enc_precalculate_x[func_x][px_x] = Math.cos(((2 * px_x + 1) * func_x * Math.PI) / (2 * 8))
+            }
+        }
+
+        this.enc_precalculate_y = Array.from(Array(8), () => new Array(8))
+        for (let func_y=0; func_y<8; func_y++) {
+            for (let px_y=0; px_y<8; px_y++) {
+                this.enc_precalculate_y[func_y][px_y] = Math.cos(((2 * px_y + 1) * func_y * Math.PI) / (2 * 8))
+            }
+        }   
+    }
+
+
+
+    // Takes a block of 8x8 pixels and performs Discrete Cosine Transform (DCT)
+    compressDCT(block, block_width=8, block_height=8) {
+        let coefficients = new Array(block_width*block_height).fill(0)
+    
+        // !!! LOOK OUT! SCARY DCT ALGORITHM BELOW!!!
+    
+        // Ok look I'm a highschool student but I'm gonna try my best to explain something I don't fully understand
+    
+        // Here goes
+    
+        // If you're unfamiliar with DCT, its the idea that any wave can be broken down and reconstructed using cosine waves of different frequencies and amplitudes
+        // A row of pixels can be thought of as a wave, and a 2D grid of pixels can be thought of as multiple waves stacked on top of eachother.
+        // We can compare an 8x8 grid of pixels to a bunch of 2D DCT basis functions (which can also be represented by a grid of 8x8) with different 
+        // frequencies of cos waves and find which ones contribute to the chunk of pixels and how much. Numbers (coefficients) referring to the amount 
+        // that a basis function contrubutes to a given chunk of pixels is enough to reconstruct it.
+    
+        // The 2D DCT basis functions can be represented by grids of 8x8 within a larger 8x8 grid of 64 basis functions.
+        // The values in the grids of each function are sampled from cosine waves. The frequency of those waves are
+        // higher depending on the position of the function grid within the larger basis function table.
+        // If you've ever seen a table of DCT basis functions, you can imagine this as iterating through each of the squares representing the frequencies
+    
+        // !! The basis functions are not actually stored as grids !!, but can be imagined as such. The values in the "grid" of a function can be found using math.
+        // Hopefully my explanation didn't make it more confusing
+        // If my explanation sucks, consult Mr. Wikipedia https://en.wikipedia.org/wiki/Discrete_cosine_transform
+
+        // This iterates through an 8x8 grid which can represent the 64 2D DCT basis functions, each with progressively higher cosine frequencies on each axis
+        for (let func_x=0; func_x<block_width; func_x++) {
+            for (let func_y=0; func_y<block_height; func_y++) {
+                // The sum, which is how much the DCT basis function contributes to the block of pixels
+                let sum = 0.0
+    
+                // The sum is scaled by these values
+                // For some reason the functions at func_x=0 and func_y=0 are scaled differently, I don't know why
+                let ci, cj;
+                if (func_x === 0) {
+                    ci = 1 / Math.sqrt(block_width)
+                } else {
+                    ci = Math.sqrt(2) / Math.sqrt(block_width)
+                }
+                if (func_y === 0) {
+                    cj = 1 / Math.sqrt(block_height)
+                } else {
+                    cj = Math.sqrt(2) / Math.sqrt(block_height)
+                }      
+    
+                // Compare each pixel in the block with the values of the DCT function based on i and j
+                for (let px_x=0; px_x<block_width; px_x++) {
+                    for (let px_y=0; px_y<block_height; px_y++) {
+                        // The original pixel value (minus 128 so that it is centered around zero, ranging from -128 to 128 for a 0-255 original value)
+                        let term = block[(px_y*block_width)+px_x]-128
+    
+                        // Cos ranges from -1 to 1
+    
+                        // px_x = the x position of the pixel in the image chunk
+                        // px_y = the y position of the pixel in the image chunk
+                        // func_x = the x frequency of the function / where the basis function would be on the x axis if it was on a table
+                        // func_y = the y frequency of the function / where the basis function would be on the y axis if it was on a table
+                        // block_width and block_height are the width and height of the size of a chunk of pixels
+    
+                        // The pixel value is multiplied by a point on the 2D DCT base function on each axis
+                        // For optimization, this has already been calculated and put into arrays
+                        term *= this.enc_precalculate_x[func_x][px_x] //Math.cos(((2 * px_x + 1) * func_x * Math.PI) / (2 * block_width))
+                        term *= this.enc_precalculate_y[func_y][px_y] //Math.cos(((2 * px_y + 1) * func_y * Math.PI) / (2 * block_height))
+    
+                        // More pixel values that align with the points on the functions they are compared to means
+                        // that the function contributes more to the chunk of pixels
+                        sum += term
+                    }
+                }
+    
+    
+                let coefficient = ci * cj * sum
+                //console.log(sum)
+    
+                let quantized = Math.round(coefficient / QUANTIZATION_VALUES[func_x][func_y])
+    
+                // Quantized are rarely above 64 or below -64, but clamp just in case
+                if (64 < quantized) {
+                    quantized = 64
+                } else if (quantized < -64) {
+                    quantized = -64
+                }
+    
+                coefficients[(func_y*block_width)+func_x] = quantized
+            }
+        }
+    
+        // Now we have a 2D array of coefficients
+    
+        return coefficients
+    }
+
+    // Compresses a raw texture stored in an array to a compressed texture stored in an array
+    async compressTexture(raw, width, height) { 
+
+        // Takes an array of coefficients from the DCT algorithm and compresses it using a simple algorithm
+        function compressCoefficients(coefficients) {
+            let output = [];
+            let zero_run = 0;
+
+            for (let c of coefficients) {
+                if (c === 0) { // Coefficient is zero, the most common. BEWARE OF NEGATIVE ZEROES.
+                    zero_run++
+                } else {
+                    if (0 < zero_run) { // If there is a run of zeroes, seal it off and reset
+                        output.push(zero_run+64)
+                        zero_run = 0
+                    }
+
+                    if (c < 0) { // Coefficient ranges from -64 to -1
+                        output.push(c+64)
+                    } else if (0 < c) { // Coefficient ranges from 1 to 64
+                        output.push(c+127)
+                    }
+                }
+            }
+            
+            // Any runs of zeroes at the end of the array will not be stored since the else condition would not be activated
+            // This is fine because the de-compressor assumes any information that is not filled in is zero, this also makes
+            // the system slightly more efficient because it saves one byte for every block with a run of zeroes at the end 
+            // of its array
+
+            return output
+        }
+
+
+        let data_arr = [];
+
+        // Gets the value of a channel (R,G,B,A..., 0,1,2,3...) from a pixel in the flat array representing the texture
+        function getPixelChannelFromFlattened(x, y, width, channel, channels=4) {
+            let start = (y*(width*channels))+(x*channels)
+            return raw[start+channel]
+        }
+
+        const startTime = performance.now()
+
+        let blocks_iterated = 0;
+        for (let channel=0; channel<4; channel++) {
+
+            for (let chunk_x=0; chunk_x<width; chunk_x+=8) {
+                for (let chunk_y=0; chunk_y<height; chunk_y+=8) {
+
+                    // Make temporary 8x8 2d array to represent chunk
+                    let chunk_data = Array(8*8).fill(0);
+
+                    for (let chunk_px_x=0; chunk_px_x<8; chunk_px_x++) {
+                        for (let chunk_px_y=0; chunk_px_y<8; chunk_px_y++) {
+                            // The texture data is flattened, so find from x and y
+                            let channel_val = getPixelChannelFromFlattened(
+                                chunk_x+chunk_px_x, 
+                                chunk_y+chunk_px_y, 
+                                width,
+                                channel,
+                                4
+                            );
+
+                            chunk_data[(chunk_px_x*8)+chunk_px_y] = channel_val
+                        }
+                    }
+
+                    // Now compress the chunk with Discrete Cosine Transform (DCT)
+                    let dct = this.compressDCT(chunk_data, 8, 8)
+                    // The prevous step doesn't actually compress the data, it just makes this next step easier
+                    let compressed_coeffs = compressCoefficients(dct);
+
+                    // Length of compressed chunk
+                    data_arr.push(compressed_coeffs.length)
+
+                    // Write compressed chunk data
+                    for (let b of compressed_coeffs) {
+                        data_arr.push(b)
+                    }
+
+                    blocks_iterated++
+                }
+
+                // Update progress every 256 blocks
+                if ((chunk_x/256) == Math.round(chunk_x/256)) {
+                    await updateProgress("Compressing texture", "blocks", blocks_iterated, ((width/8)*(height/8))*4)
+                }
+            }
+            
+        }
+
+        closeProgressBar()
+
+        const endTime = performance.now()
+        console.log(`Texture compression ${endTime - startTime} ms`)
+
+        // 25366-25601-28395 before
+        // 22263 after
+
+        return data_arr
+    }
+
+
+
+    // Takes a flattened compressed array of coefficients from DCT and decompresses it into an array of pixels
+    decompressDCT(compressed, block_width=8, block_height=8) {
+        let decompressed = new Array(block_width*block_height).fill(0)
+
+        for (let px_x=0; px_x<block_width; px_x++) {
+            for (let px_y=0; px_y<block_height; px_y++) {
+
+                let sum = 0.0;
+
+                // Apply function and amount
+                for (let func_x=0; func_x<block_height; func_x++) {
+                    for (let func_y=0; func_y<block_width; func_y++) {
+                        let ci, cj;
+                        if (func_x === 0) {
+                            ci = 1 / Math.sqrt(block_width)
+                        } else {
+                            ci = Math.sqrt(2) / Math.sqrt(block_width)
+                        }
+                        if (func_y === 0) {
+                            cj = 1 / Math.sqrt(block_height)
+                        } else {
+                            cj = Math.sqrt(2) / Math.sqrt(block_height)
+                        }
+
+                        let term = compressed[(func_y*block_width)+func_x] * QUANTIZATION_VALUES[func_x][func_y] * ci * cj
+                        term *= this.enc_precalculate_x[func_x][px_x] //Math.cos(((2 * k + 1) * func_x * Math.PI) / (2 * block_width))
+                        term *= this.enc_precalculate_y[func_y][px_y] //Math.cos(((2 * l + 1) * func_y * Math.PI) / (2 * block_height))
+
+                        sum += term
+                    }
+                }
+
+                // Sometimes the decompressed value will be slightly over 255 or below 0, so it needs to be clamped
+
+                let value = Math.round(sum+128)
+
+                if (255 < value) {
+                    value = 255
+                } else if (value < 0) {
+                    value = 0
+                }
+
+                // Should be close to the pixel before it was compressed
+                // The decompressed array should be flat, so k and l (x and y) should be converted to an index
+                decompressed[(px_x*block_width)+px_y] = value
+            }
+        }
+
+        return decompressed
+    }
+
+    async decompressTexture(compressed, width, height) {
+
+        // Reverse of compressCoefficients
+        function decompressCoefficients(compressed) {
+            let coefficients = [];
+
+            for (let byte of compressed) {
+                if (byte < 64) {
+                    coefficients.push(byte-64)
+                }
+
+                if (64 <= byte && byte < 128) {
+                    let zero_run_length = byte-64
+                    for (let r=0; r<zero_run_length; r++) {
+                        coefficients.push(0)
+                    }
+                }
+
+                if (128 <= byte && byte < 192) {
+                    coefficients.push(byte-127)
+                }
+            }
+
+            // As mentioned in the compressor, runs of zeros at the ends of arrays of coefficients are not stored
+            // because the decompressor (this) will fill any missing data with zeroes anyways
+            let missing_coeffs = 64-coefficients.length;
+            for (let i=0; i<missing_coeffs; i++) {
+                coefficients.push(0)
+            }
+
+            return coefficients
+        }
+
+
+        let bh = new ByteHandler(compressed)
+
+        // Texture data (split into compressed blocks)
+        let texture_data = new Uint8Array(new ArrayBuffer(width*height*4))
+
+        // Sets the value of a channel (R,G,B,A..., 0,1,2,3...) of a pixel in a flattened array representing a texture
+        function setPixelChannelFromFlattened(value, x, y, width, channel, channels=4) {
+            let start = (y*(width*channels))+(x*channels)
+            texture_data[start+channel] = value
+        }
+
+        let blocks_iterated = 0;
+        for (let channel=0; channel<4; channel++) {
+            for (let block_x=0; block_x<width; block_x+=8) {
+                for (let block_y=0; block_y<height; block_y+=8) {
+
+                    let block_len = bh.next_byte();
+                    let decompressed_coeffs = decompressCoefficients(bh.next_bytes(block_len));
+                    let decompressed_block = this.decompressDCT(decompressed_coeffs);
+                    //console.log(decompressed_block)
+                    for (let b=0; b<decompressed_block.length; b++) {
+                        let block_px_x = b % 8;
+                        let block_px_y = Math.floor(b/8);
+                        
+                        setPixelChannelFromFlattened(
+                            decompressed_block[b], 
+                            (block_x+block_px_x), 
+                            (block_y+block_px_y), 
+                            width, channel, 4
+                        )
+                    }
+
+                    blocks_iterated++
+                }
+
+                // Update progress every 256 blocks
+                if ((block_x/256) == Math.round(block_x/256)) {
+                    await updateProgress("Decompressing texture", "blocks", blocks_iterated, ((width/8)*(height/8))*4)
+                }                
+            }
+
+        }
+
+        closeProgressBar()
+
+        return texture_data
+    }
+}
+
+
+
+
+
+
 
 
 export class World {
@@ -129,7 +492,7 @@ export class World {
             this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
         });
 
-
+        this.dct_encoder = new DCTEncoder()
 
         this.objects = [];
         this.materials = {};
@@ -166,7 +529,7 @@ export class World {
         }
 
         // Preload default textures (remove later)
-        await this.importMaterialByURL("/kodiak/assets/textures/sky.png", "Sky");
+        await this.importMaterialByURL("/kodiak/assets/textures/sunset.png", "Sky");
         this.materials[0].stretch = true
         this.materials[0].shading = false
         await this.importMaterialByURL("/kodiak/assets/textures/plain_color_tile.png", "PlainColorTile");
@@ -271,7 +634,7 @@ export class World {
     }
 
     // Creates a new Kodiak material (not threejs material) from an imported image file
-    async importMaterial(data, material_name="Untitled Model") {
+    async importMaterial(data, material_name="Untitled Model", downres=1) {
         // Accepts common image files
 
         // I have to convert the data to base 64 so the browser can take it and convert it back into binary. So fucking stupid.
@@ -288,19 +651,19 @@ export class World {
         img_canvas.width = image_obj.width;
         img_canvas.height = image_obj.height;
         let img_ctx = img_canvas.getContext("2d");
-        img_ctx.drawImage(image_obj, 0, 0);
+        img_ctx.drawImage(image_obj, 0, 0, image_obj.width/downres, image_obj.height/downres);
         
         // Ok now that I have the image on a canvas I can get the raw pixel data
-        let img_data = img_ctx.getImageData(0, 0, image_obj.width, image_obj.height)
+        let img_data = img_ctx.getImageData(0, 0, image_obj.width/downres, image_obj.height/downres)
 
         // Now make the actual Kodiak material object
         let material = {
             "name":material_name,
             "textures":{
-                "diffuse":await this.compressTexture(img_data.data, image_obj.width, image_obj.height)
+                "diffuse":await this.dct_encoder.compressTexture(img_data.data, image_obj.width/downres, image_obj.height/downres)
             },
-            "texture_width":image_obj.width,
-            "texture_height":image_obj.height,
+            "texture_width":image_obj.width/downres,
+            "texture_height":image_obj.height/downres,
             "tint": [
                 255,
                 255,
@@ -316,11 +679,11 @@ export class World {
         return this.materials.length-1
     }
 
-    async importMaterialByURL(filename, material_name) {
+    async importMaterialByURL(filename, material_name, downres=1) {
         let request = await fetch(filename);
         let raw = await request.bytes();
 
-        return await this.importMaterial(raw, material_name)
+        return await this.importMaterial(raw, material_name, downres)
     }
 
     // Gets the first material with the specified name
@@ -346,7 +709,7 @@ export class World {
             } else { // If not, cache it
                 //console.log(material.textures.diffuse, material.texture_width, material.texture_height)
                 let diffuse = new THREE.DataTexture(
-                    await this.decompressTexture(
+                    await this.dct_encoder.decompressTexture(
                         material.textures.diffuse, 
                         material.texture_width, 
                         material.texture_height
@@ -509,8 +872,8 @@ export class World {
 
 
     // Creates an object in data.space.objects and returns the ID
-    newPart() {
-        let new_object = {"position":[0, 0, 0], "scale":[1, 1, 1], "rotation":[0, 0, 0], "material":0, "model":0};
+    newObject() {
+        let new_object = {"position":[0, 0, 0], "scale":[1, 1, 1], "rotation":[0, 0, 0], "material":0, "tint":[255, 255, 255, ], "model":0};
         let object_id = generateRandomID();
 
         this.data.space.objects[object_id] = new_object;
@@ -523,7 +886,6 @@ export class World {
                 "diffuse":"/assets/textures/dark_brick.png"
             },
 
-            "tint":[255, 255, 255],
             "stretch":false,
             "scale":1
         }
@@ -533,7 +895,7 @@ export class World {
     }
 
 
-    async clonePart(object_id) {
+    async cloneObject(object_id) {
         let object = this.getObjectByID(object_id);
 
         console.log(generateRandomID())
@@ -547,7 +909,7 @@ export class World {
         }
     }
 
-    async delPart(object_id) {
+    async delObject(object_id) {
         let object = this.getObjectByID(object_id);
 
         if (object) {
@@ -618,329 +980,6 @@ export class World {
         }
 
         //console.log("Finished UV update")
-    }
-
-    // Compresses a raw texture stored in an array to a compressed texture stored in an array
-    async compressTexture(raw, width, height) {
-
-        function compressDCT(block, chunk_width=8, chunk_height=8) {
-            let coefficients = new Array(chunk_width*chunk_height).fill(0)
-        
-            // !!! LOOK OUT! SCARY DCT ALGORITHM BELOW!!!
-        
-            // Ok look I'm a highschool student but I'm gonna try my best to explain something I don't fully understand
-        
-            // Here goes
-        
-            // If you're unfamiliar with DCT, its the idea that any wave can be broken down and reconstructed using cosine waves of different frequencies and amplitudes
-            // A row of pixels can be thought of as a wave, and a 2D grid of pixels can be thought of as multiple waves stacked on top of eachother.
-            // We can compare an 8x8 grid of pixels to a bunch of 2D DCT basis functions (which can also be represented by a grid of 8x8) with different 
-            // frequencies of cos waves and find which ones contribute to the chunk of pixels and how much. Numbers (coefficients) referring to the amount 
-            // that a basis function contrubutes to a given chunk of pixels is enough to reconstruct it.
-        
-            // The 2D DCT basis functions can be represented by grids of 8x8 within a larger 8x8 grid of 64 basis functions.
-            // The values in the grids of each function are sampled from cosine waves. The frequency of those waves are
-            // higher depending on the position of the function grid within the larger basis function table.
-            // If you've ever seen a table of DCT basis functions, you can imagine this as iterating through each of the squares representing the frequencies
-        
-            // !! The basis functions are not actually stored as grids !!, but can be imagined as such. The values in the "grid" of a function can be found using math.
-            // Hopefully my explanation didn't make it more confusing
-            // If my explanation sucks, consult Mr. Wikipedia https://en.wikipedia.org/wiki/Discrete_cosine_transform
-
-            // This iterates through an 8x8 grid which can represent the 64 2D DCT basis functions, each with progressively higher cosine frequencies on each axis
-            for (let i=0; i<chunk_width; i++) {
-                for (let j=0; j<chunk_height; j++) {
-                    // The sum, which is how much the DCT basis function contributes to the block of pixels
-                    let sum = 0.0
-        
-                    // The sum is scaled by these values
-                    // For some reason the functions at i=0 and j=0 are scaled differently, I don't know why
-                    let ci, cj;
-                    if (i === 0) {
-                        ci = 1 / Math.sqrt(chunk_width)
-                    } else {
-                        ci = Math.sqrt(2) / Math.sqrt(chunk_width)
-                    }
-                    if (j === 0) {
-                        cj = 1 / Math.sqrt(chunk_height)
-                    } else {
-                        cj = Math.sqrt(2) / Math.sqrt(chunk_height)
-                    }      
-        
-                    // Compare each pixel in the block with the values of the DCT function based on i and j
-                    for (let x=0; x<chunk_width; x++) {
-                        for (let y=0; y<chunk_height; y++) {
-                            // The original pixel value (minus 128 so that it is centered around zero, ranging from -128 to 128 for a 0-255 original value)
-                            let term = block[(y*chunk_width)+x]-128
-        
-                            // Cos ranges from -1 to 1
-        
-                            // k = the x position of the pixel in the image chunk
-                            // l = the y position of the pixel in the image chunk
-                            // i = the x frequency of the function / where the basis function would be on the x axis if it was on a table
-                            // j = the y frequency of the function / where the basis function would be on the y axis if it was on a table
-                            // chunk_width and chunk_height are the width and height of the size of a chunk of pixels
-        
-                            // The pixel value is multiplied by a point on the 2D DCT base function on each axis
-                            term *= Math.cos(((2 * x + 1) * i * Math.PI) / (2 * chunk_width))
-                            term *= Math.cos(((2 * y + 1) * j * Math.PI) / (2 * chunk_height))
-        
-                            // More pixel values that align with the points on the functions they are compared to means
-                            // that the function contributes more to the chunk of pixels
-                            sum += term
-                        }
-                    }
-        
-        
-                    let coefficient = ci * cj * sum
-                    //console.log(sum)
-        
-                    let quantized = Math.round(coefficient / QUANTIZATION_VALUES[i][j])
-        
-                    // Quantized are rarely above 64 or below -64, but clamp just in case
-                    if (64 < quantized) {
-                        quantized = 64
-                    } else if (quantized < -64) {
-                        quantized = -64
-                    }
-        
-                    coefficients[(j*chunk_width)+i] = quantized
-                }
-            }
-        
-            // Now we have a 2D array of coefficients
-        
-            return coefficients
-        }
-
-        // Takes an array of coefficients from the DCT algorithm and compresses it using a simple algorithm
-        function compressCoefficients(coefficients) {
-            let output = [];
-            let zero_run = 0;
-
-            for (let c of coefficients) {
-                if (c === 0) { // Coefficient is zero, the most common. BEWARE OF NEGATIVE ZEROES.
-                    zero_run++
-                } else {
-                    if (0 < zero_run) { // If there is a run of zeroes, seal it off and reset
-                        output.push(zero_run+64)
-                        zero_run = 0
-                    }
-
-                    if (c < 0) { // Coefficient ranges from -64 to -1
-                        output.push(c+64)
-                    } else if (0 < c) { // Coefficient ranges from 1 to 64
-                        output.push(c+127)
-                    }
-                }
-            }
-            
-            // Any runs of zeroes at the end of the array will not be stored since the else condition would not be activated
-            // This is fine because the de-compressor assumes any information that is not filled in is zero, this also makes
-            // the system slightly more efficient because it saves one byte for every block with a run of zeroes at the end 
-            // of its array
-
-            return output
-        }
-
-
-        let data_arr = [];
-
-        // Gets the value of a channel (R,G,B,A..., 0,1,2,3...) from a pixel in the flat array representing the texture
-        function getPixelChannelFromFlattened(x, y, width, channel, channels=4) {
-            let start = (y*(width*channels))+(x*channels)
-            return raw[start+channel]
-        }
-
-        const startTime = performance.now()
-
-        let blocks_iterated = 0;
-        for (let channel=0; channel<4; channel++) {
-
-            for (let chunk_x=0; chunk_x<width; chunk_x+=8) {
-                for (let chunk_y=0; chunk_y<height; chunk_y+=8) {
-
-                    // Make temporary 8x8 2d array to represent chunk
-                    let chunk_data = Array(8*8).fill(0);
-
-                    for (let chunk_px_x=0; chunk_px_x<8; chunk_px_x++) {
-                        for (let chunk_px_y=0; chunk_px_y<8; chunk_px_y++) {
-                            // The texture data is flattened, so find from x and y
-                            let channel_val = getPixelChannelFromFlattened(
-                                chunk_x+chunk_px_x, 
-                                chunk_y+chunk_px_y, 
-                                width,
-                                channel,
-                                4
-                            );
-
-                            chunk_data[(chunk_px_x*8)+chunk_px_y] = channel_val
-                        }
-                    }
-
-                    // Now compress the chunk with Discrete Cosine Transform (DCT)
-                    let dct = compressDCT(chunk_data, 8, 8)
-                    // The prevous step doesn't actually compress the data, it just makes this next step easier
-                    let compressed_coeffs = compressCoefficients(dct);
-
-                    // Length of compressed chunk
-                    data_arr.push(compressed_coeffs.length)
-
-                    // Write compressed chunk data
-                    for (let b of compressed_coeffs) {
-                        data_arr.push(b)
-                    }
-
-                    blocks_iterated++
-                }
-
-                if ((chunk_x/256) == Math.round(chunk_x/256)) {
-                    await updateProgress("Compressing texture", "blocks", blocks_iterated, ((width/8)*(height/8))*4)
-                }
-            }
-            
-        }
-
-        const endTime = performance.now()
-        console.log(`Texture compression ${endTime - startTime} ms`)
-
-        // 25366-25601-28395 before
-        // 22263 after
-
-        return data_arr
-    }
-
-    async decompressTexture(compressed, width, height) {
-
-        // Takes a flattened compressed array of coefficients and decompresses it into an array of pixels
-        function decompressDCT(compressed, chunk_width=8, chunk_height=8) {
-            let decompressed = new Array(chunk_width*chunk_height).fill(0)
-
-            for (let k=0; k<chunk_width; k++) {
-                for (let l=0; l<chunk_height; l++) {
-
-                    let sum = 0.0;
-
-                    // Apply function and amount
-                    for (let i=0; i<chunk_height; i++) {
-                        for (let j=0; j<chunk_width; j++) {
-                            let ci, cj;
-                            if (i === 0) {
-                                ci = 1 / Math.sqrt(chunk_width)
-                            } else {
-                                ci = Math.sqrt(2) / Math.sqrt(chunk_width)
-                            }
-                            if (j === 0) {
-                                cj = 1 / Math.sqrt(chunk_height)
-                            } else {
-                                cj = Math.sqrt(2) / Math.sqrt(chunk_height)
-                            }
-                                        // Compressed array is flat, so index is found from i and j (x and y)
-                            let term = compressed[(j*chunk_width)+i] * QUANTIZATION_VALUES[i][j] * ci * cj
-                            term *= Math.cos(((2 * k + 1) * i * Math.PI) / (2 * chunk_width))
-                            term *= Math.cos(((2 * l + 1) * j * Math.PI) / (2 * chunk_height))
-
-                            sum += term
-                        }
-                    }
-
-                    // Sometimes the decompressed value will be slightly over 255 or below 0, so it needs to be clamped
-
-                    let value = Math.round(sum+128)
-
-                    if (255 < value) {
-                        value = 255
-                    } else if (value < 0) {
-                        value = 0
-                    }
-
-                    // Should be close to the pixel before it was compressed
-                    // The decompressed array should be flat, so k and l (x and y) should be converted to an index
-                    decompressed[(k*chunk_width)+l] = value
-                }
-            }
-
-            return decompressed
-        }
-
-        // Reverse of compressCoefficients
-        function decompressCoefficients(compressed) {
-            let coefficients = [];
-
-            for (let byte of compressed) {
-                if (byte < 64) {
-                    coefficients.push(byte-64)
-                }
-
-                if (64 <= byte && byte < 128) {
-                    let zero_run_length = byte-64
-                    for (let r=0; r<zero_run_length; r++) {
-                        coefficients.push(0)
-                    }
-                }
-
-                if (128 <= byte && byte < 192) {
-                    coefficients.push(byte-127)
-                }
-            }
-
-            // As mentioned in the compressor, runs of zeros at the ends of arrays of coefficients are not stored
-            // because the decompressor (this) will fill any missing data with zeroes anyways
-            let missing_coeffs = 64-coefficients.length;
-            for (let i=0; i<missing_coeffs; i++) {
-                coefficients.push(0)
-            }
-
-            return coefficients
-        }
-
-
-        let bh = new ByteHandler(compressed)
-
-        // Texture data (split into compressed blocks)
-        let texture_data = new Uint8Array(new ArrayBuffer(width*height*4))
-
-        // Sets the value of a channel (R,G,B,A..., 0,1,2,3...) of a pixel in a flattened array representing a texture
-        function setPixelChannelFromFlattened(value, x, y, width, channel, channels=4) {
-            let start = (y*(width*channels))+(x*channels)
-            texture_data[start+channel] = value
-        }
-
-        let channels = 4;
-
-        let blocks_iterated = 0;
-        for (let channel=0; channel<4; channel++) {
-            for (let block_x=0; block_x<width; block_x+=8) {
-                for (let block_y=0; block_y<height; block_y+=8) {
-
-                    let block_len = bh.next_byte();
-                    let decompressed_coeffs = decompressCoefficients(bh.next_bytes(block_len));
-                    let decompressed_block = decompressDCT(decompressed_coeffs);
-                    //console.log(decompressed_block)
-                    for (let b=0; b<decompressed_block.length; b++) {
-                        let block_px_x = b % 8;
-                        let block_px_y = Math.floor(b/8);
-
-                        texture_data[
-                            (
-                                (block_y+block_px_y)*
-                                (width*channels)
-                            )+(
-                                (block_x+block_px_x)
-                                *channels
-                            )+channel
-                        ] = decompressed_block[b]
-                    }
-
-                    blocks_iterated++
-                }
-
-                await updateProgress("Decompressing texture", "blocks", blocks_iterated, ((width/8)*(height/8))*4)
-            }
-
-        }
-
-        return texture_data
     }
 
     // Encodes the world data to binary
@@ -1416,7 +1455,7 @@ export class World {
         let object_count = decode_uint(bh.next_bytes(2))
 
         for (let i=0; i<object_count; i++) {
-            let new_object_id = this.newPart();
+            let new_object_id = this.newObject();
             let new_object = this.getObjectByID(new_object_id);
     
             new_object.position[0] = decode_num(bh.next_bytes(4))-(this.LIMIT/2);

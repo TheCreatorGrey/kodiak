@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { World, generateRandomID } from "../world.js";
-import { Tool, cast, map } from "./tool.js"
+import { World, generateRandomID, updateProgress } from "../world.js";
+import { Tool, cast } from "./tool.js"
 import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
 
 // A lot of the code in here is atrocious. I will probably finish cleaning it later.
@@ -114,7 +114,9 @@ async function setup() {
     let data = await request.json();
     await world.load(data);
 
-    //convertXML(world, "/kodiak/3rdparty/roblox/import_tests/suburb.rbxmx");
+    //convertXML(world, "/kodiak/3rdparty/roblox/import_tests/suburb.rbxmx", async (a, b) => {
+    //    updateProgress("Importing RBXMX", "parts", a, b)
+    //});
 
     world.renderer.domElement.classList.add("editorCanvas");
 
@@ -171,7 +173,7 @@ async function setup() {
         if (intersects.length > 0) {
             let point = intersects[0].point;
 
-            let object_id = world.newPart();
+            let object_id = world.newObject();
             let object = world.getObjectByID(object_id);
             object.position[0] = point.x;
             object.position[1] = point.y;
@@ -181,8 +183,8 @@ async function setup() {
         }
     };
 
-    del_btn.onclick = function () { world.delPart(tool.selected_object_id); tool.set_selected_object(null); };
-    clone_btn.onclick = function () { world.clonePart(tool.selected_object_id) };
+    del_btn.onclick = function () { world.delObject(tool.selected_object_id); tool.set_selected_object(null); };
+    clone_btn.onclick = function () { world.cloneObject(tool.selected_object_id) };
 
     snap_input.onchange = function () {
         for (let d in tool.draggables) {
@@ -198,22 +200,60 @@ async function setup() {
 
     const object_id_display = document.getElementById("object_id_display");
 
+    const input_pos_x = document.getElementById("input-pos-x")
+    input_pos_x.onchange = function () {
+        tool.getSelectedObject().position[0] = parseFloat(input_pos_x.value)
+    }
+
+    const input_pos_y = document.getElementById("input-pos-y")
+    input_pos_y.onchange = function () {
+        tool.getSelectedObject().position[1] = parseFloat(input_pos_y.value)
+    }
+
+    const input_pos_z = document.getElementById("input-pos-x")
+    input_pos_z.onchange = function () {
+        tool.getSelectedObject().position[2] = parseFloat(input_pos_z.value)
+    }
 
 
-    for (let m in map) { // Update selected object values when input boxes are changed
-        document.getElementById(m).onchange = function () {
-            let val = parseFloat(document.getElementById(m).value);
-            let selected_object_id = tool.selected_object_id;
-            tool.selected_object_id = null;
+    const input_scl_x = document.getElementById("input-scl-x")
+    input_scl_x.onchange = function () {
+        tool.getSelectedObject().scale[0] = parseFloat(input_scl_x.value)
+    }
 
-            if (map[m].attr === 'rotation') {
-                val *= Math.PI / 180;
-            }
+    const input_scl_y = document.getElementById("input-scl-y")
+    input_scl_y.onchange = function () {
+        tool.getSelectedObject().scale[1] = parseFloat(input_scl_y.value)
+    }
 
-            selected_object_id[map[m].attr][map[m].subattr] = val;
+    const input_scl_z = document.getElementById("input-scl-z")
+    input_scl_z.onchange = function () {
+        tool.getSelectedObject().scale[2] = parseFloat(input_scl_z.value)
+    }
 
-            tool.set_selected_object(selected_object_id);
-        }
+
+    const input_ro_x = document.getElementById("input-ro-x")
+    input_ro_x.onchange = function () {
+        tool.getSelectedObject().rotation[0] = parseFloat(input_ro_x.value)*Math.PI / 180
+    }
+
+    const input_ro_y = document.getElementById("input-ro-y")
+    input_ro_y.onchange = function () {
+        tool.getSelectedObject().rotation[1] = parseFloat(input_ro_y.value)*Math.PI / 180
+    }
+
+    const input_ro_z = document.getElementById("input-ro-z")
+    input_ro_z.onchange = function () {
+        tool.getSelectedObject().rotation[2] = parseFloat(input_ro_z.value)*Math.PI / 180
+    }
+
+
+
+    const input_tint_r = document.getElementById("input-tint-r")
+    input_tint_r.onchange = async function () {
+        console.log(world.getThreeMesh(tool.selected_object_id))
+        let three_mesh = await world.getThreeMesh(tool.selected_object_id)
+        three_mesh.material.color.r = parseInt(input_tint_r.value)
     }
 
     // === /\

@@ -1,4 +1,6 @@
+
 Version 2
+
 Removed scripting
 Changed interface
 Added mesh importing and new primitives
@@ -6,3 +8,5 @@ Added mesh importing and new primitives
 Implemented JPEG-like compression for textures
 Improved encoding and decoding for integers
 Added progress bar for heavy tasks and prevented page freezing
+
+Reduced texture encoding time by 75% !!! :O
