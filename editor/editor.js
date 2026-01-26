@@ -94,7 +94,7 @@ function animate() {
         for (let d in tool.draggables) {
             let draggable = tool.draggables[d].draggable;
 
-            let scale = .1 * world.camera.position.distanceTo(new THREE.Vector3(world.data.space.objects[tool.selected_object_id].position[0], world.data.space.objects[tool.selected_object_id].position[1], world.data.space.objects[tool.selected_object_id].position[2]));
+            let scale = .1 * world.camera.position.distanceTo(new THREE.Vector3(world.objects[tool.selected_object_id].position[0], world.objects[tool.selected_object_id].position[1], world.objects[tool.selected_object_id].position[2]));
             draggable.object.scale.set(scale, scale, scale);
         }
     }
@@ -110,13 +110,11 @@ var tool;
 async function setup() {
     world = new World("editor");
 
-    let request = await fetch("/kodiak/test_place.json");
-    let data = await request.json();
-    await world.load(data);
+    await world.initialize();
 
-    //convertXML(world, "/kodiak/3rdparty/roblox/import_tests/suburb.rbxmx", async (a, b) => {
-    //    updateProgress("Importing RBXMX", "parts", a, b)
-    //});
+    convertXML(world, "/kodiak/3rdparty/roblox/import_tests/suburb.rbxmx", async (a, b) => {
+        updateProgress("Importing RBXMX", "parts", a, b)
+    });
 
     world.renderer.domElement.classList.add("editorCanvas");
 
@@ -251,9 +249,17 @@ async function setup() {
 
     const input_tint_r = document.getElementById("input-tint-r")
     input_tint_r.onchange = async function () {
-        console.log(world.getThreeMesh(tool.selected_object_id))
-        let three_mesh = await world.getThreeMesh(tool.selected_object_id)
-        three_mesh.material.color.r = parseInt(input_tint_r.value)
+        world.objects[tool.selected_object_id].material.color.r = parseInt(input_tint_r.value)/255
+    }
+
+    const input_tint_g = document.getElementById("input-tint-g")
+    input_tint_g.onchange = async function () {
+        world.objects[tool.selected_object_id].material.color.g = parseInt(input_tint_g.value)/255
+    }
+
+    const input_tint_b = document.getElementById("input-tint-b")
+    input_tint_b.onchange = async function () {
+        world.objects[tool.selected_object_id].material.color.b = parseInt(input_tint_b.value)/255
     }
 
     // === /\
@@ -342,7 +348,7 @@ async function setup() {
         if (material_or_model === "model") {
 
         } else if (material_or_model === "material") {
-            let material = world.data.assets.materials[matmod_id]
+            let material = world.materials[matmod_id]
 
 
             let textures_label = document.createElement("div");
@@ -409,7 +415,7 @@ async function setup() {
 
             uv_autoscale_checkbox.onchange = () => {
                 material.stretch = !uv_autoscale_checkbox.checked
-                world.data.assets.materials[matmod_id].stretch = !uv_autoscale_checkbox.checked
+                world.materials[matmod_id].stretch = !uv_autoscale_checkbox.checked
             }
 
 
@@ -427,7 +433,7 @@ async function setup() {
             tint_subsect.appendChild(tint_r_label)
 
             let tint_r_textarea = document.createElement("textarea");
-            tint_r_textarea.innerText = material.tint[0]
+            tint_r_textarea.innerText = Math.floor(material.color.r*255)
             tint_subsect.appendChild(tint_r_textarea)
 
             let tint_g_label = document.createElement("span");
@@ -435,7 +441,7 @@ async function setup() {
             tint_subsect.appendChild(tint_g_label)
 
             let tint_g_textarea = document.createElement("textarea");
-            tint_g_textarea.innerText = material.tint[1]
+            tint_g_textarea.innerText = Math.floor(material.color.g*255)
             tint_subsect.appendChild(tint_g_textarea)
 
             let tint_b_label = document.createElement("span");
@@ -443,19 +449,19 @@ async function setup() {
             tint_subsect.appendChild(tint_b_label)
 
             let tint_b_textarea = document.createElement("textarea");
-            tint_b_textarea.innerText = material.tint[2]
+            tint_b_textarea.innerText = Math.floor(material.color.b*255)
             tint_subsect.appendChild(tint_b_textarea)
 
             tint_r_textarea.onchange = () => {
-                material.tint[0] = parseInt(tint_r_textarea.value)
+                material.color.r = parseInt(tint_r_textarea.value)/255
             }
 
             tint_g_textarea.onchange = () => {
-                material.tint[1] = parseInt(tint_g_textarea.value)
+                material.tint.g = parseInt(tint_g_textarea.value)/255
             }
 
             tint_b_textarea.onchange = () => {
-                material.tint[2] = parseInt(tint_b_textarea.value)
+                material.tint.b = parseInt(tint_b_textarea.value)/255
             }
         }
     }

@@ -34,22 +34,6 @@ export function sleep(ms) {
 
 
 
-
-
-// 50% compression ratio quantization values from JPEG standard
-const QUANTIZATION_VALUES = [
-    [16,11,10,16,24,40,51,61],
-    [12,12,14,19,26,58,60,55],
-    [14,13,16,24,40,57,69,56],
-    [14,17,22,29,51,87,80,62],
-    [18,22,37,56,68,109,103,77],
-    [24,35,55,64,81,104,113,92],
-    [49,64,78,87,103,121,120,101],
-    [72,92,95,98,112,100,103,99]
-]
-
-
-
 export function generateRandomID(length=8) {
     let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let generated_id = "";
@@ -102,7 +86,20 @@ export class DCTEncoder {
             for (let px_y=0; px_y<8; px_y++) {
                 this.enc_precalculate_y[func_y][px_y] = Math.cos(((2 * px_y + 1) * func_y * Math.PI) / (2 * 8))
             }
-        }   
+        } 
+        
+        
+        // 50% compression ratio quantization values from JPEG standard
+        this.QUANTIZATION_VALUES = [
+            [16,11,10,16,24,40,51,61],
+            [12,12,14,19,26,58,60,55],
+            [14,13,16,24,40,57,69,56],
+            [14,17,22,29,51,87,80,62],
+            [18,22,37,56,68,109,103,77],
+            [24,35,55,64,81,104,113,92],
+            [49,64,78,87,103,121,120,101],
+            [72,92,95,98,112,100,103,99]
+        ]
     }
 
 
@@ -181,7 +178,7 @@ export class DCTEncoder {
                 let coefficient = ci * cj * sum
                 //console.log(sum)
     
-                let quantized = Math.round(coefficient / QUANTIZATION_VALUES[func_x][func_y])
+                let quantized = Math.round(coefficient / this.QUANTIZATION_VALUES[func_x][func_y])
     
                 // Quantized are rarely above 64 or below -64, but clamp just in case
                 if (64 < quantized) {
@@ -296,9 +293,6 @@ export class DCTEncoder {
         const endTime = performance.now()
         console.log(`Texture compression ${endTime - startTime} ms`)
 
-        // 25366-25601-28395 before
-        // 22263 after
-
         return data_arr
     }
 
@@ -328,7 +322,7 @@ export class DCTEncoder {
                             cj = Math.sqrt(2) / Math.sqrt(block_height)
                         }
 
-                        let term = compressed[(func_y*block_width)+func_x] * QUANTIZATION_VALUES[func_x][func_y] * ci * cj
+                        let term = compressed[(func_y*block_width)+func_x] * this.QUANTIZATION_VALUES[func_x][func_y] * ci * cj
                         term *= this.enc_precalculate_x[func_x][px_x] //Math.cos(((2 * k + 1) * func_x * Math.PI) / (2 * block_width))
                         term *= this.enc_precalculate_y[func_y][px_y] //Math.cos(((2 * l + 1) * func_y * Math.PI) / (2 * block_height))
 
@@ -450,7 +444,7 @@ export class World {
         this.mode = mode;
     }
 
-    async load(data) {
+    async initialize() {
         this.LIMIT = Math.pow(255, 2);
 
         this.canvas = document.getElementById('canvas');
@@ -485,7 +479,7 @@ export class World {
         this.camera.fov = 70;
         this.camera.updateProjectionMatrix();
 
-        window.addEventListener("resize", (event) => {
+        window.addEventListener("resize", () => {
             this.camera.aspect = this.canvas.clientWidth / this.canvas.clientHeight;
             this.camera.updateProjectionMatrix();
 
@@ -494,21 +488,17 @@ export class World {
 
         this.dct_encoder = new DCTEncoder()
 
-        this.objects = [];
+
+        this.objects = {};
         this.materials = {};
 
-        // Cache of THREE.js materials representing Kodiak materials in data.assets.materials
-        this.three_material_cache = {};
+        this.title = "Unnamed Kodiak Project"
+        this.version = 2
 
-        // Dictionary of THREE.js meshes representing objects. The key of any threejs mesh
-        // in this array should match the key of the corresponding object in data.space.objects
-        // Are they called dictionaries or objects in JavaScript? I don't know
-        this.three_object_meshes = {};
+        this.objects = {};
 
-        this.data = data;
-
-        this.materials = this.data.assets.materials;
-        this.models = this.data.assets.models;
+        this.materials = [];
+        this.models = [];
 
         //console.log(this.materials)
 
@@ -529,15 +519,32 @@ export class World {
         }
 
         // Preload default textures (remove later)
-        await this.importMaterialByURL("/kodiak/assets/textures/sunset.png", "Sky");
-        this.materials[0].stretch = true
-        this.materials[0].shading = false
+        //await this.importMaterialByURL("/kodiak/assets/textures/sunset.png", "Sky");
+        //this.materials[0].stretch = true
+        //this.materials[0].shading = false
         await this.importMaterialByURL("/kodiak/assets/textures/plain_color_tile.png", "PlainColorTile");
         await this.importMaterialByURL("/kodiak/assets/textures/alpha_test.png", "AlphaTest");
 
-        for (let object_id in this.data.space.objects) {
-            await this.manifest(object_id)
-        }
+        
+
+        // Temporary stuff
+        let terrain = this.newObject()
+        await this.setModel(terrain.object_id, 10)
+        await this.setMaterial(terrain.object_id, 0)
+        terrain.scale.x = 2048
+        terrain.scale.y = 64
+        terrain.scale.z = 2048
+        this.updateUVs(terrain.object_id)
+        console.log(terrain.object_id, this.objects)
+
+        let person_size_ref = this.newObject()
+        await this.setModel(person_size_ref.object_id, 0)
+        await this.setMaterial(person_size_ref.object_id, 0)
+        person_size_ref.scale.x = .8
+        person_size_ref.scale.y = 1.8
+        person_size_ref.scale.z = .8
+        this.updateUVs(person_size_ref.object_id)
+        console.log(person_size_ref.object_id, this.objects)
     }
 
     // Creates a new Kodiak model (not threejs mesh/object) from an imported OBJ
@@ -614,7 +621,9 @@ export class World {
 
         console.log(`Obj model "${model_name}" loaded`)
 
-        this.data.assets.models.push(object)
+        object.model_id = this.models.length
+
+        this.models.push(object)
     }
 
     async importModelByURL(filename, model_name) {
@@ -626,14 +635,58 @@ export class World {
 
     // Gets the first model with the specified name
     getModelIDByName(name) {
-        for (let model_id in this.models) {
+        for (let model of this.models) {
+            let model_id = model.model_id;
             if (this.models[model_id].name.toLowerCase() === name.toLowerCase()) {
                 return model_id
             }
         }
     }
 
-    // Creates a new Kodiak material (not threejs material) from an imported image file
+
+    newMaterial(name) {
+        let material = new THREE.MeshLambertMaterial({
+            transparent: true,
+            depthTest: true,
+            alphaTest: 0.5
+        });
+
+        material.name = name
+        material.material_id = this.materials.length;
+        this.materials.push(material)
+
+        return material
+    }
+
+    async setMaterialTexture(material, compressed, width, height) {
+        let decompressed = await this.dct_encoder.decompressTexture(compressed, width, height)
+
+        let diffuse = new THREE.DataTexture(
+            decompressed,
+            width, 
+            height, 
+            THREE.RGBAFormat
+        );
+
+        diffuse.flipY = true;
+        diffuse.wrapS = THREE.RepeatWrapping;
+        diffuse.wrapT = THREE.RepeatWrapping;
+        diffuse.colorSpace = THREE.SRGBColorSpace; // So the textures dont look washed out
+        diffuse.minFilter = THREE.LinearMipmapLinearFilter;
+        diffuse.magFilter = THREE.LinearFilter;
+
+        diffuse.needsUpdate = true;
+
+        // Store pre-compressed for quick saving later
+        diffuse.pre_compressed = compressed
+        // Add resolution tags
+        diffuse.width = width
+        diffuse.height = height
+
+        material.map = diffuse
+    }
+
+    // Creates a new material from an imported image file
     async importMaterial(data, material_name="Untitled Model", downres=1) {
         // Accepts common image files
 
@@ -646,7 +699,7 @@ export class World {
         image_obj.src = base64;
         await image_obj.decode();
 
-        // Create canvas because there is no better way that I know of
+        // Create canvas like this because there is no better way that I know of
         let img_canvas = document.createElement("canvas");
         img_canvas.width = image_obj.width;
         img_canvas.height = image_obj.height;
@@ -656,27 +709,17 @@ export class World {
         // Ok now that I have the image on a canvas I can get the raw pixel data
         let img_data = img_ctx.getImageData(0, 0, image_obj.width/downres, image_obj.height/downres)
 
-        // Now make the actual Kodiak material object
-        let material = {
-            "name":material_name,
-            "textures":{
-                "diffuse":await this.dct_encoder.compressTexture(img_data.data, image_obj.width/downres, image_obj.height/downres)
-            },
-            "texture_width":image_obj.width/downres,
-            "texture_height":image_obj.height/downres,
-            "tint": [
-                255,
-                255,
-                255
-            ],
-            "stretch": false,
-            "scale": [1, 1],
-            "shading":true
-        }
 
-        this.materials.push(material)
+        // I know this seems stupid because it'll just be decompressed later but pre-compressing makes 
+        // it so that it doesnt take a long time to save to file
+        // also textures will look the same as they would after importing the saved file
+        let pre_compressed = await this.dct_encoder.compressTexture(img_data.data, image_obj.width/downres, image_obj.height/downres)
 
-        return this.materials.length-1
+        let material = this.newMaterial(material_name)
+
+        await this.setMaterialTexture(material, pre_compressed, image_obj.width/downres, image_obj.height/downres)
+
+        return material
     }
 
     async importMaterialByURL(filename, material_name, downres=1) {
@@ -696,63 +739,14 @@ export class World {
     }
 
     async setMaterial(object_id, material_id) {
-        let object = this.data.space.objects[object_id]
+        let object = this.objects[object_id]
         if (object) {
-            let three_mesh = await this.getThreeMesh(object_id);
+            let material = this.materials[material_id];
+            let mat_clone = material.clone() // Using a clone of the loaded material allows you to change attributes of the materials (such as tint/color) of individual objects without making whole separate materials for each object
 
-            let material = this.materials[material_id]; // Kodiak material object
+            //mat_clone.color = new THREE.Color(object.tint[0]/255, object.tint[1]/255, object.tint[2]/255)
 
-            let three_material; // THREE.js material object
-
-            if (material_id in this.three_material_cache) { // Use cached material if it exists
-                three_material = this.three_material_cache[material_id]
-            } else { // If not, cache it
-                //console.log(material.textures.diffuse, material.texture_width, material.texture_height)
-                let diffuse = new THREE.DataTexture(
-                    await this.dct_encoder.decompressTexture(
-                        material.textures.diffuse, 
-                        material.texture_width, 
-                        material.texture_height
-                    ), 
-                    material.texture_width, 
-                    material.texture_height, 
-                    THREE.RGBAFormat
-                );
-
-                diffuse.flipY = true;
-                diffuse.wrapS = THREE.RepeatWrapping;
-                diffuse.wrapT = THREE.RepeatWrapping;
-                diffuse.colorSpace = THREE.SRGBColorSpace; // So the textures dont look washed out
-                diffuse.minFilter = THREE.LinearMipmapLinearFilter;
-                diffuse.magFilter = THREE.LinearFilter;
-
-                diffuse.needsUpdate = true;
-
-                console.log(diffuse)
-
-                if (material.shading) {
-                    three_material = new THREE.MeshLambertMaterial({
-                        map: diffuse,
-                        transparent: true,
-                        depthTest: true,
-                        alphaTest: 0.5,
-                        color:new THREE.Color(material.tint[0]/255, material.tint[1]/255, material.tint[2]/255)
-                    });
-                } else {
-                    three_material = new THREE.MeshBasicMaterial({
-                        map: diffuse,
-                        transparent: true,
-                        depthTest: true,
-                        alphaTest: 0.5,
-                        color:new THREE.Color(material.tint[0]/255, material.tint[1]/255, material.tint[2]/255)
-                    });
-                }
-
-                this.three_material_cache[material_id] = three_material
-            }
-
-            three_mesh.material = three_material;
-            object.material = material_id
+            object.material = mat_clone
 
             await this.updateUVs(object_id)
         } else {
@@ -762,11 +756,12 @@ export class World {
 
 
     async setModel(object_id, model_id) {
-        let object = this.data.space.objects[object_id]
+        let object = this.objects[object_id]
+        console.log(object, this.objects, object_id, model_id)
         if (object) {
-            let three_mesh = await this.getThreeMesh(object_id);
+            let model = this.models[model_id]; // Kodiak model object
 
-            let model = this.data.assets.models[model_id]; // Kodiak model object
+            console.log(model)
 
             // Every object has a model property which refers to model data stored in
             // the file. This model data is in JSON format like the rest of the file
@@ -810,8 +805,10 @@ export class World {
             );
 
             
-            three_mesh.geometry = geometry;
-            object.model = model_id; // update metadata so uv update works
+            object.geometry = geometry;
+            object.model_id = model_id; // update metadata so uv update works
+
+            object.geometry.needsUpdate = true
             console.log("Set model")
         } else {
             console.warn("Did not set model because no object was given or found")
@@ -819,79 +816,29 @@ export class World {
     }
 
 
-    async manifest(object_id) {
-        let three_mesh;
-        let object = this.data.space.objects[object_id];
-        if (! (object_id in this.three_object_meshes)) {
-
-            three_mesh = new THREE.Mesh();
-            three_mesh.geometry = new THREE.BoxGeometry();
-            three_mesh.is_object = true;
-            three_mesh.object_id = object_id;
-            this.scene.add(three_mesh);
-
-            this.three_object_meshes[object_id] = three_mesh;
-
-            // This must be after the previous lines otherwise there will be a recursion error
-            await this.setModel(object_id, object.model)
-        }
-
-        three_mesh = this.three_object_meshes[object_id];
-
-        // Apply object attributes to the THREE.js mesh
-
-        three_mesh.position.x = object.position[0];
-        three_mesh.position.y = object.position[1];
-        three_mesh.position.z = object.position[2];
-
-        three_mesh.rotation.x = object.rotation[0];
-        three_mesh.rotation.y = object.rotation[1];
-        three_mesh.rotation.z = object.rotation[2];
-
-        three_mesh.scale.x = object.scale[0];
-        three_mesh.scale.y = object.scale[1];
-        three_mesh.scale.z = object.scale[2];
-
-        await this.setMaterial(object_id, object.material);
-        await this.updateUVs(object_id);
-    }
-
-    // Gets the Three.js mesh associated with an object
-    async getThreeMesh(object_id) {
-        if (! (object_id in this.three_object_meshes)) {
-            await this.manifest(object_id)
-        }
-
-        return this.three_object_meshes[object_id]
-    }
-
     getObjectByID(object_id) {
-        return this.data.space.objects[object_id]
+        return this.objects[object_id]
     }
 
 
-
-    // Creates an object in data.space.objects and returns the ID
+    // Creates an object and returns it
     newObject() {
-        let new_object = {"position":[0, 0, 0], "scale":[1, 1, 1], "rotation":[0, 0, 0], "material":0, "tint":[255, 255, 255, ], "model":0};
         let object_id = generateRandomID();
 
-        this.data.space.objects[object_id] = new_object;
-        return object_id
-    }
+        let object = new THREE.Mesh();
+        object.is_object = true;
+        object.object_id = object_id;
+        this.scene.add(object);
 
-    newMaterial(name) {
-        let new_material = {
-            "textures":{
-                "diffuse":"/assets/textures/dark_brick.png"
-            },
+        // Kodiak tags
+        object.material_id = 0
+        object.model_id = 0
+        object.uv_scale = [1, 1]
+        object.auto_uv_scale = true
 
-            "stretch":false,
-            "scale":1
-        }
+        this.objects[object_id] = object;
 
-        this.data.assets.materials[name] = new_material;
-        return this.data.assets.materials[name]
+        return object
     }
 
 
@@ -901,9 +848,9 @@ export class World {
         console.log(generateRandomID())
 
         if (object) {
-            let clone_id = generateRandomID();
-            this.data.space.objects[clone_id] = structuredClone(object);
-            this.manifest(clone_id);
+            //let clone_id = generateRandomID();
+            //this.objects[clone_id] = structuredClone(object);
+            //this.manifest(clone_id);
         } else {
             console.warn("[Clone object] No object was supplied or found.")
         }
@@ -913,11 +860,8 @@ export class World {
         let object = this.getObjectByID(object_id);
 
         if (object) {
-            let three_mesh = await this.getThreeMesh(object_id);
-
-            this.scene.remove(three_mesh);
-            delete this.data.space.objects[object_id];
-            delete this.three_object_meshes[object_id];
+            this.scene.remove(object);
+            delete this.objects[object_id];
 
         } else {
             console.warn("[!] Action (delete) was not performed; No object was supplied or found.")
@@ -926,11 +870,9 @@ export class World {
 
     // Stretches the UVs of a cube to match its scale
     async updateUVs(object_id) {
-        let object = this.getObjectByID(object_id);
+        let object = this.objects[object_id];
         if (object) {
-            let three_mesh = await this.getThreeMesh(object_id);            
-            let object_material = this.data.assets.materials[object.material];
-            let object_model = this.data.assets.models[object.model]
+            let object_model = this.models[object.model_id]
 
             //console.log(object.model)
 
@@ -943,7 +885,7 @@ export class World {
                     let norm = vert[1];
                     let uv = vert[2];
 
-                    if (!object_material.stretch) {        
+                    if (object.auto_uv_scale) {        
                         let max_norm = Math.max( // With this we can find the most "extreme" value, or the direction the normal most closely faces
                             Math.abs(norm[0]), 
                             Math.abs(norm[1]), 
@@ -952,29 +894,29 @@ export class World {
     
                         if (Math.abs(norm[1]) === max_norm) { // If the vertex normal is non-zero on the y axis, we can assume it is upward / downward facing and can be scaled on the x and z axes
                             //console.log(vert_index, object.scale[0])
-                            three_mesh.geometry.attributes.uv.array[vert_index*2] = uv[0] * (object.scale[0]/object_material.scale[0])
-                            three_mesh.geometry.attributes.uv.array[(vert_index*2)+1] = uv[1] * (object.scale[2]/object_material.scale[1])
+                            object.geometry.attributes.uv.array[vert_index*2] = uv[0] * (object.scale.x/object.uv_scale[0])
+                            object.geometry.attributes.uv.array[(vert_index*2)+1] = uv[1] * (object.scale.z/object.uv_scale[1])
                         }
                         if (Math.abs(norm[0]) === max_norm) { //
                             //console.log(vert_index, object.scale[0])
-                            three_mesh.geometry.attributes.uv.array[vert_index*2] = uv[0] * (object.scale[2]/object_material.scale[0])
-                            three_mesh.geometry.attributes.uv.array[(vert_index*2)+1] = uv[1] * (object.scale[1]/object_material.scale[1])
+                            object.geometry.attributes.uv.array[vert_index*2] = uv[0] * (object.scale.z/object.uv_scale[0])
+                            object.geometry.attributes.uv.array[(vert_index*2)+1] = uv[1] * (object.scale.y/object.uv_scale[1])
                         }
                         if (Math.abs(norm[2]) === max_norm) { //
                             //console.log(vert_index, object.scale[0])
-                            three_mesh.geometry.attributes.uv.array[vert_index*2] = uv[0] * (object.scale[0]/object_material.scale[0])
-                            three_mesh.geometry.attributes.uv.array[(vert_index*2)+1] = uv[1] * (object.scale[1]/object_material.scale[1])
+                            object.geometry.attributes.uv.array[vert_index*2] = uv[0] * (object.scale.x/object.uv_scale[0])
+                            object.geometry.attributes.uv.array[(vert_index*2)+1] = uv[1] * (object.scale.y/object.uv_scale[1])
                         }
                     } else {
-                        three_mesh.geometry.attributes.uv.array[vert_index*2] = uv[0] * object_material.scale[0]
-                        three_mesh.geometry.attributes.uv.array[(vert_index*2)+1] = uv[1] * object_material.scale[1]
+                        object.geometry.attributes.uv.array[vert_index*2] = uv[0] * object.uv_scale[0]
+                        object.geometry.attributes.uv.array[(vert_index*2)+1] = uv[1] * object.uv_scale[1]
                     }
 
                     vert_index++;
                 }
             }
 
-            three_mesh.geometry.attributes.uv.needsUpdate = true;
+            object.geometry.attributes.uv.needsUpdate = true;
         } else {
             console.warn("[Update UVs] No object was supplied or found.")
         }
@@ -1090,14 +1032,12 @@ export class World {
 
 
         // Title
-        let title_encoded = encode_utf8(this.data.title)
+        let title_encoded = encode_utf8(this.title)
         data_arr.push(title_encoded.length)
         data_arr.push(...title_encoded);
 
-        console.log(this.data, this.data.title, title_encoded, title_encoded.length)
-
         // Version number
-        data_arr.push(this.data.version)
+        data_arr.push(this.version)
 
         // Where to place the camera if loaded in an editor
         data_arr.push(...encode_num(this.camera.position.x+(this.LIMIT/2)))
@@ -1178,33 +1118,9 @@ export class World {
             data_arr.push(material_name_encoded.length)
             data_arr.push(...material_name_encoded);
 
-            // UV scale (up to 255^2 times the original to 1/255^2)
-            data_arr.push(...encode_num(material.scale[0])) // u / x
-            data_arr.push(...encode_num(material.scale[1])) // v / y
-
-            // Material tint (RGBA, 0-255 each)
-            data_arr.push(material.tint[0])
-            data_arr.push(material.tint[1])
-            data_arr.push(material.tint[2])
-            data_arr.push(material.tint[3])
-
-            // Other material settings
-
-            if (material.stretch) { // 0 or 255 will be used for boolean values. Not efficent but we're dealing with uint8s, not bit by bit.
-                data_arr.push(255)
-            } else {
-                data_arr.push(0)
-            }
-
-            if (material.shading) {
-                data_arr.push(255)
-            } else {
-                data_arr.push(0)
-            }
-
             // Resolution of textures (max res is a 65k by 65k image, which would be 16 gigabytes uncompressed... I wont even bother adding a resolution check because who the hell uploads a 16 GB texture?
-            data_arr.push(...encode_uint(2, material.texture_width))
-            data_arr.push(...encode_uint(2, material.texture_height))
+            data_arr.push(...encode_uint(2, material.map.width))
+            data_arr.push(...encode_uint(2, material.map.height))
 
             // Pixel channel ranges
             // 1 channel = greyscale
@@ -1217,38 +1133,55 @@ export class World {
             // The textures are pre-compressed, so they can just be added to the file as is
 
             // Total length of texture in bytes
-            data_arr.push(...encode_uint(3, material.textures.diffuse.length))
-            // The texture data itself (too many elements to push)
-            data_arr = data_arr.concat(material.textures.diffuse)
+            data_arr.push(...encode_uint(3, material.map.pre_compressed.length))
+            // The texture data itself (too much data to push)
+            data_arr = data_arr.concat(material.map.pre_compressed)
         }
 
 
-        console.log(data_arr.length, "num obj", Object.keys(this.data.space.objects).length)
+        console.log(data_arr.length, "num obj", Object.keys(this.objects).length)
 
 
         // Number of objects (maximum count of 255^2, 2 bytes)
-        data_arr.push(...encode_uint(2, Object.keys(this.data.space.objects).length));
+        data_arr.push(...encode_uint(2, Object.keys(this.objects).length));
 
         // Objects
-        for (let object_id in this.data.space.objects) {
-            let object = this.data.space.objects[object_id];
+        for (let object_id in this.objects) {
+            let object = this.objects[object_id];
 
             //console.log(encode_num(object.position[1]), object.position[1])
 
-            data_arr.push(...encode_num(object.position[0]+(this.LIMIT/2))); // Object position (12 bytes)
-            data_arr.push(...encode_num(object.position[1]+(this.LIMIT/2)));
-            data_arr.push(...encode_num(object.position[2]+(this.LIMIT/2)));
+            data_arr.push(...encode_num(object.position.x+(this.LIMIT/2))); // Object position (12 bytes)
+            data_arr.push(...encode_num(object.position.y+(this.LIMIT/2)));
+            data_arr.push(...encode_num(object.position.z+(this.LIMIT/2)));
 
-            data_arr.push(...encode_num(object.scale[0])); // Object scale (12 bytes)
-            data_arr.push(...encode_num(object.scale[1]));
-            data_arr.push(...encode_num(object.scale[2]));
+            data_arr.push(...encode_num(object.scale.x)); // Object scale (12 bytes)
+            data_arr.push(...encode_num(object.scale.y));
+            data_arr.push(...encode_num(object.scale.z));
 
-            data_arr.push(...encode_radians(object.rotation[0])); // Object rotation (6 bytes)
-            data_arr.push(...encode_radians(object.rotation[1]));
-            data_arr.push(...encode_radians(object.rotation[2]));
+            data_arr.push(...encode_radians(object.rotation.x)); // Object rotation (6 bytes)
+            data_arr.push(...encode_radians(object.rotation.y));
+            data_arr.push(...encode_radians(object.rotation.z));
 
-            data_arr.push(object.model);
-            data_arr.push(object.material);
+            data_arr.push(object.model_id);
+            data_arr.push(object.material_id);
+
+            // UV scale (up to 255^2 times the original to 1/255^2)
+            data_arr.push(...encode_num(object.uv_scale[0])) // u / x
+            data_arr.push(...encode_num(object.uv_scale[1])) // v / y
+
+            // Tint / color (RGBA, 0-255 each)
+            data_arr.push(Math.round(object.material.color.r*255))
+            data_arr.push(Math.round(object.material.color.g*255))
+            data_arr.push(Math.round(object.material.color.b*255))
+            data_arr.push(255) // Add alpha later
+
+            // UV auto scaling
+            if (object.uv_auto_scale) { // 0 or 255 will be used for boolean values. Not efficent but we're dealing with uint8s, not bit by bit.
+                data_arr.push(255)
+            } else {
+                data_arr.push(0)
+            }
         }
 
 
@@ -1315,12 +1248,12 @@ export class World {
 
         // Title, obviously
         let title_size = bh.next_byte();
-        this.data.title = utf8decoder.decode(bh.next_bytes(title_size));
-        console.log(this.data.title)
+        this.title = utf8decoder.decode(bh.next_bytes(title_size));
+        console.log(this.title)
 
         // Version number
-        this.data.version = bh.next_byte(); // Hopefully by version 255 no further changes will be needed *shrug*
-        console.log(this.data.version)
+        this.version = bh.next_byte(); // Hopefully by version 255 no further changes will be needed *shrug*
+        console.log(this.version)
 
 
         // Apply saved position to editor camera
@@ -1376,7 +1309,7 @@ export class World {
                 model_parsed.tris.push(triangle)
             }
 
-            this.data.assets.models[model_id] = model_parsed
+            this.models[model_id] = model_parsed
             console.log(model_parsed)
         }
 
@@ -1387,42 +1320,18 @@ export class World {
         console.log(material_count)
         
         for (let mat_id=0; mat_id<material_count; mat_id++) {
-            let material_parsed = {}
+            
 
             // Material name
             let material_name_size = bh.next_byte();
-            material_parsed.name = utf8decoder.decode(bh.next_bytes(material_name_size));
-            console.log(material_parsed.name)
+            let material_name = utf8decoder.decode(bh.next_bytes(material_name_size));
+            console.log(material_name)
 
-            // Texture UV scale
-            material_parsed["scale"] = [
-                decode_num(bh.next_bytes(4)),
-                decode_num(bh.next_bytes(4))
-            ]
-
-            // RGBA color tint
-            material_parsed["tint"] = bh.next_bytes(4)
-
-            // Other material settings
-
-            if (bh.next_byte() === 255) { // Stretch
-                material_parsed["stretch"] = true
-            } else {
-                material_parsed["stretch"] = false
-            }
-
-            if (bh.next_byte() === 255) { // Shading
-                material_parsed["shading"] = true
-            } else {
-                material_parsed["shading"] = false
-            }
+            let material = this.newMaterial(material_name)
 
             // Texrure resolution
             let tex_resolution_x = decode_uint(bh.next_bytes(2))
             let tex_resolution_y = decode_uint(bh.next_bytes(2))
-
-            material_parsed["texture_width"] = tex_resolution_x;
-            material_parsed["texture_height"] = tex_resolution_y;
 
             // Number of channels from 1 to 6, greyscale to RGBA with material maps (details in encoder)
             let num_channels = bh.next_byte()
@@ -1436,9 +1345,7 @@ export class World {
             //    texture_data[b] = bh.next_byte()
             //}
 
-            material_parsed["textures"] = {"diffuse":texture_data}
-
-            this.data.assets.materials[mat_id] = material_parsed
+            await this.setMaterialTexture(material, texture_data, tex_resolution_x, tex_resolution_y)
         }
 
 
@@ -1455,27 +1362,40 @@ export class World {
         let object_count = decode_uint(bh.next_bytes(2))
 
         for (let i=0; i<object_count; i++) {
-            let new_object_id = this.newObject();
-            let new_object = this.getObjectByID(new_object_id);
+            let new_object = this.newObject();
     
-            new_object.position[0] = decode_num(bh.next_bytes(4))-(this.LIMIT/2);
-            new_object.position[1] = decode_num(bh.next_bytes(4))-(this.LIMIT/2);
-            new_object.position[2] = decode_num(bh.next_bytes(4))-(this.LIMIT/2);
+            new_object.position.x = decode_num(bh.next_bytes(4))-(this.LIMIT/2);
+            new_object.position.y = decode_num(bh.next_bytes(4))-(this.LIMIT/2);
+            new_object.position.z = decode_num(bh.next_bytes(4))-(this.LIMIT/2);
     
-            new_object.scale[0] = decode_num(bh.next_bytes(4));
-            new_object.scale[1] = decode_num(bh.next_bytes(4));
-            new_object.scale[2] = decode_num(bh.next_bytes(4));
+            new_object.scale.x = decode_num(bh.next_bytes(4));
+            new_object.scale.y = decode_num(bh.next_bytes(4));
+            new_object.scale.z = decode_num(bh.next_bytes(4));
     
-            new_object.rotation[0] = decode_radians(bh.next_bytes(2));
-            new_object.rotation[1] = decode_radians(bh.next_bytes(2));
-            new_object.rotation[2] = decode_radians(bh.next_bytes(2));
+            new_object.rotation.x = decode_radians(bh.next_bytes(2));
+            new_object.rotation.y = decode_radians(bh.next_bytes(2));
+            new_object.rotation.z = decode_radians(bh.next_bytes(2));
 
-            new_object.model = bh.next_byte();
-            new_object.material = bh.next_byte();
+            await this.setModel(new_object.object_id, bh.next_byte())
+            await this.setMaterial(new_object.object_id, bh.next_byte())
+
+            new_object.uv_scale[0] = decode_num(bh.next_bytes(4))
+            new_object.uv_scale[1] = decode_num(bh.next_bytes(4))
+
+            new_object.material.color.r = bh.next_byte()/255
+            new_object.material.color.g = bh.next_byte()/255
+            new_object.material.color.b = bh.next_byte()/255
+            bh.next_byte() // Alpha later
+
+            if (bh.next_byte() === 255) {
+                new_object.auto_uv_scale = true
+            } else {
+                new_object.auto_uv_scale = false
+            }
 
             console.log(new_object.position, new_object.scale, new_object.rotation)
 
-            this.manifest(new_object_id);
+            this.updateUVs(new_object.object_id);
         }
     }
 }

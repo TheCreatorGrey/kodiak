@@ -10,3 +10,7 @@ Improved encoding and decoding for integers
 Added progress bar for heavy tasks and prevented page freezing
 
 Reduced texture encoding time by 75% !!! :O
+
+Objects can now have different tints and UV scales independent from their materials
+Changed how scenes are loaded into Three.js to be less confusing and overall just better
+Removed remnants of old JSON based file format

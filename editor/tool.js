@@ -122,11 +122,9 @@ export class Tool {
 
         this.mode = "move";
 
-        //console.log(Object.values(this.world.three_object_meshes))
-
         this.world.canvas.addEventListener("mousedown", (event) => {
             if (event.button === 0) {
-                const intersects = mouseCast(this.world, Object.values(this.world.three_object_meshes).concat(this.draggables), event);
+                const intersects = mouseCast(this.world, Object.values(this.world.objects).concat(this.draggables), event);
 
                 let isDraggable = false;
                 if (intersects.length > 0) {
@@ -166,7 +164,7 @@ export class Tool {
     }
 
     set_selected_object(object_id) {
-        let object = this.world.data.space.objects[object_id];
+        let object = this.world.objects[object_id];
 
         if (object) {
             console.log(object)
@@ -180,26 +178,26 @@ export class Tool {
             this.selected_object_id = object_id;
             console.log(this.selected_object_id)
 
-            this.x1.object.position.x = object.position[0] + (object.scale[0] / 2);
-            this.x2.object.position.x = object.position[0] - (object.scale[0] / 2);
+            this.x1.object.position.x = object.position.x + (object.scale.x / 2);
+            this.x2.object.position.x = object.position.x - (object.scale.x / 2);
 
-            this.y1.object.position.y = object.position[1] + (object.scale[1] / 2);
-            this.y2.object.position.y = object.position[1] - (object.scale[1] / 2);
+            this.y1.object.position.y = object.position.y + (object.scale.y / 2);
+            this.y2.object.position.y = object.position.y - (object.scale.y / 2);
 
-            this.z1.object.position.z = object.position[2] + (object.scale[2] / 2);
-            this.z2.object.position.z = object.position[2] - (object.scale[2] / 2);
+            this.z1.object.position.z = object.position.z + (object.scale.z / 2);
+            this.z2.object.position.z = object.position.z - (object.scale.z / 2);
 
-            document.getElementById("input-pos-x").value = object.position[0]
-            document.getElementById("input-pos-y").value = object.position[1]
-            document.getElementById("input-pos-z").value = object.position[2]
+            document.getElementById("input-pos-x").value = object.position.x
+            document.getElementById("input-pos-y").value = object.position.y
+            document.getElementById("input-pos-z").value = object.position.z
 
-            document.getElementById("input-scl-x").value = object.scale[0]
-            document.getElementById("input-scl-y").value = object.scale[1]
-            document.getElementById("input-scl-z").value = object.scale[2]
+            document.getElementById("input-scl-x").value = object.scale.x
+            document.getElementById("input-scl-y").value = object.scale.y
+            document.getElementById("input-scl-z").value = object.scale.z
 
-            document.getElementById("input-ro-x").value = object.rotation[0] / Math.PI / 180
-            document.getElementById("input-ro-y").value = object.rotation[1] / Math.PI / 180
-            document.getElementById("input-ro-z").value = object.rotation[2] / Math.PI / 180
+            document.getElementById("input-ro-x").value = object.rotation.x / Math.PI / 180
+            document.getElementById("input-ro-y").value = object.rotation.y / Math.PI / 180
+            document.getElementById("input-ro-z").value = object.rotation.z / Math.PI / 180
         } else {
             //document.getElementById('sidebar').style.display = 'none';
 
@@ -231,64 +229,64 @@ export class Tool {
     }
 
     update() {
-        let object = this.world.data.space.objects[this.selected_object_id];
+        let object = this.world.objects[this.selected_object_id];
         
         if (object) {
-            this.cursor.position.x = object.position[0];
-            this.cursor.position.y = object.position[1];
-            this.cursor.position.z = object.position[2];
+            this.cursor.position.x = object.position.x;
+            this.cursor.position.y = object.position.y;
+            this.cursor.position.z = object.position.z;
 
-            this.cursor.scale.x = object.scale[0];
-            this.cursor.scale.y = object.scale[1];
-            this.cursor.scale.z = object.scale[2];
+            this.cursor.scale.x = object.scale.x;
+            this.cursor.scale.y = object.scale.y;
+            this.cursor.scale.z = object.scale.z;
 
             //this.cursor.geometry = object.geometry;
 
             if (this.mode === "scale") {
-                object.scale[0] = (this.x1.object.position.x - this.x2.object.position.x);
-                object.position[0] = (this.x1.object.position.x / 2) + (this.x2.object.position.x / 2);
+                object.scale.x = (this.x1.object.position.x - this.x2.object.position.x);
+                object.position.x = (this.x1.object.position.x / 2) + (this.x2.object.position.x / 2);
 
-                object.scale[1] = (this.y1.object.position.y - this.y2.object.position.y);
-                object.position[1] = (this.y1.object.position.y / 2) + (this.y2.object.position.y / 2);
+                object.scale.y = (this.y1.object.position.y - this.y2.object.position.y);
+                object.position.y = (this.y1.object.position.y / 2) + (this.y2.object.position.y / 2);
 
-                object.scale[2] = (this.z1.object.position.z - this.z2.object.position.z);
-                object.position[2] = (this.z1.object.position.z / 2) + (this.z2.object.position.z / 2);
-
-
-                this.x1.object.position.z = object.position[2];
-                this.x1.object.position.y = object.position[1];
-
-                this.x2.object.position.z = object.position[2];
-                this.x2.object.position.y = object.position[1];
+                object.scale.z = (this.z1.object.position.z - this.z2.object.position.z);
+                object.position.z = (this.z1.object.position.z / 2) + (this.z2.object.position.z / 2);
 
 
-                this.y1.object.position.z = object.position[2];
-                this.y1.object.position.x = object.position[0];
+                this.x1.object.position.z = object.position.z;
+                this.x1.object.position.y = object.position.y;
 
-                this.y2.object.position.z = object.position[2];
-                this.y2.object.position.x = object.position[0];
+                this.x2.object.position.z = object.position.z;
+                this.x2.object.position.y = object.position.y;
 
 
-                this.z1.object.position.x = object.position[0];
-                this.z1.object.position.y = object.position[1];
+                this.y1.object.position.z = object.position.z;
+                this.y1.object.position.x = object.position.x;
 
-                this.z2.object.position.x = object.position[0];
-                this.z2.object.position.y = object.position[1];
+                this.y2.object.position.z = object.position.z;
+                this.y2.object.position.x = object.position.x;
+
+
+                this.z1.object.position.x = object.position.x;
+                this.z1.object.position.y = object.position.y;
+
+                this.z2.object.position.x = object.position.x;
+                this.z2.object.position.y = object.position.y;
 
             } else if (this.mode === "move") {
 
                 if (this.x1.active) {
-                    this.x2.object.position.x = (this.x1.object.position.x - object.scale[0])
+                    this.x2.object.position.x = (this.x1.object.position.x - object.scale.x)
                 } else if (this.x2.active) {
-                    this.x1.object.position.x = (this.x2.object.position.x + object.scale[0])
+                    this.x1.object.position.x = (this.x2.object.position.x + object.scale.x)
                 }
 
-                this.x1.object.position.y = object.position[1];
-                this.x2.object.position.y = object.position[1];
-                this.x1.object.position.z = object.position[2];
-                this.x2.object.position.z = object.position[2];
+                this.x1.object.position.y = object.position.y;
+                this.x2.object.position.y = object.position.y;
+                this.x1.object.position.z = object.position.z;
+                this.x2.object.position.z = object.position.z;
 
-                object.position[0] = (this.x1.object.position.x / 2) + (this.x2.object.position.x / 2);
+                object.position.x = (this.x1.object.position.x / 2) + (this.x2.object.position.x / 2);
 
 
 
@@ -296,17 +294,17 @@ export class Tool {
 
 
                 if (this.y1.active) {
-                    this.y2.object.position.y = (this.y1.object.position.y - object.scale[1])
+                    this.y2.object.position.y = (this.y1.object.position.y - object.scale.y)
                 } else if (this.y2.active) {
-                    this.y1.object.position.y = (this.y2.object.position.y + object.scale[1])
+                    this.y1.object.position.y = (this.y2.object.position.y + object.scale.y)
                 }
 
-                this.y1.object.position.x = object.position[0];
-                this.y2.object.position.x = object.position[0];
-                this.y1.object.position.z = object.position[2];
-                this.y2.object.position.z = object.position[2];
+                this.y1.object.position.x = object.position.x;
+                this.y2.object.position.x = object.position.x;
+                this.y1.object.position.z = object.position.z;
+                this.y2.object.position.z = object.position.z;
 
-                object.position[1] = (this.y1.object.position.y / 2) + (this.y2.object.position.y / 2);
+                object.position.y = (this.y1.object.position.y / 2) + (this.y2.object.position.y / 2);
 
 
 
@@ -315,20 +313,20 @@ export class Tool {
 
 
                 if (this.z1.active) {
-                    this.z2.object.position.z = (this.z1.object.position.z - object.scale[2])
+                    this.z2.object.position.z = (this.z1.object.position.z - object.scale.z)
                 } else if (this.z2.active) {
-                    this.z1.object.position.z = (this.z2.object.position.z + object.scale[2])
+                    this.z1.object.position.z = (this.z2.object.position.z + object.scale.z)
                 }
 
-                this.z1.object.position.y = object.position[1];
-                this.z2.object.position.y = object.position[1];
-                this.z1.object.position.x = object.position[0];
-                this.z2.object.position.x = object.position[0];
+                this.z1.object.position.y = object.position.y;
+                this.z2.object.position.y = object.position.y;
+                this.z1.object.position.x = object.position.x;
+                this.z2.object.position.x = object.position.x;
 
-                object.position[2] = (this.z1.object.position.z / 2) + (this.z2.object.position.z / 2);
+                object.position.z = (this.z1.object.position.z / 2) + (this.z2.object.position.z / 2);
             }
 
-            this.world.manifest(this.selected_object_id)
+            this.world.updateUVs(this.selected_object_id)
         }
     }
 

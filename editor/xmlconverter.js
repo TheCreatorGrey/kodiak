@@ -19,6 +19,8 @@ export async function convertXML(world, filename, onprogress) {
     await world.importModelByURL("/kodiak/3rdparty/roblox/shapes/wedge.obj", "roblox_wedge");
     await world.importModelByURL("/kodiak/3rdparty/roblox/shapes/cornerwedge.obj", "roblox_cornerwedge");
 
+    let roblox_materials = {}
+
 
     let special_parts = xml.getElementsByClassName("WedgePart");
     for (let part of special_parts) {
@@ -292,43 +294,43 @@ export async function convertXML(world, filename, onprogress) {
 
 
         // ========
-        let new_object_id = world.newPart();
-        let new_object = world.getObjectByID(new_object_id);
+        let new_object = world.newObject();
+        let new_object_id = new_object.object_id
 
-        new_object.position[0] = transform.position[0]*scale_factor;
-        new_object.position[1] = transform.position[1]*scale_factor;
-        new_object.position[2] = transform.position[2]*scale_factor;
+        new_object.position.x = transform.position[0]*scale_factor;
+        new_object.position.y = transform.position[1]*scale_factor;
+        new_object.position.z = transform.position[2]*scale_factor;
 
-        new_object.scale[0] = transform.scale[0]*scale_factor;
-        new_object.scale[1] = transform.scale[1]*scale_factor;
-        new_object.scale[2] = transform.scale[2]*scale_factor;
+        new_object.scale.x = transform.scale[0]*scale_factor;
+        new_object.scale.y = transform.scale[1]*scale_factor;
+        new_object.scale.z = transform.scale[2]*scale_factor;
 
-        console.log("shit pant", transform.rotation[0])
-        new_object.rotation[0] = transform.rotation[0];
-        new_object.rotation[1] = transform.rotation[1];
-        new_object.rotation[2] = transform.rotation[2];
+        new_object.rotation.x = transform.rotation[0];
+        new_object.rotation.y = transform.rotation[1];
+        new_object.rotation.z = transform.rotation[2];
 
-        let kodiak_material_name = `Roblox ${material_name} (${r},${g},${b})`;
-        let mat_id = world.getMaterialIDByName(kodiak_material_name)
+        new_object.auto_uv_scale = true;
+        new_object.uv_scale = [(.2/scale_factor)*3, (.2/scale_factor)*3]
 
-        if (!mat_id) {
-            mat_id = await world.importMaterialByURL(`../3rdparty/roblox/materials/${material_name}/color.png`, kodiak_material_name, 8);
-            let object_mat = world.materials[mat_id];
-            object_mat.tint = [r, g, b];
-            object_mat.stretch = false;
-            object_mat.scale = [.2/scale_factor, .2/scale_factor]
+        world.setModel(new_object_id, world.getModelIDByName(model_name))
+
+        if (! (material_name in roblox_materials)) {
+            roblox_materials[material_name] = await world.importMaterialByURL(`../3rdparty/roblox/materials/${material_name}/color.png`, `Roblox ${material_name}`, 8);
         }
 
-        new_object.material = mat_id;
-        new_object.model = world.getModelIDByName(model_name)
+        console.log(roblox_materials[material_name])
 
-        world.manifest(new_object_id);
+        await world.setMaterial(new_object_id, roblox_materials[material_name].material_id)
+
+        new_object.material.color.r = r/255
+        new_object.material.color.g = g/255
+        new_object.material.color.b = b/255
+
+        //updateProgress("Importing RBXMX", "parts", parts_iterated, parts.length)
+        parts_iterated++
 
         if (onprogress) {
             await onprogress(parts_iterated, parts.length)
         }
-
-        //updateProgress("Importing RBXMX", "parts", parts_iterated, parts.length)
-        parts_iterated++
     }
 }
