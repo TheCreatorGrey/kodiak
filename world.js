@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { KScript } from './scripting.js';
 
 
 // **** Proudly made without the use of generative AI ****
@@ -103,7 +104,6 @@ export class DCTEncoder {
     }
 
 
-
     // Takes a block of 8x8 pixels and performs Discrete Cosine Transform (DCT)
     compressDCT(block, block_width=8, block_height=8) {
         let coefficients = new Array(block_width*block_height).fill(0)
@@ -198,6 +198,54 @@ export class DCTEncoder {
 
     // Compresses a raw texture stored in an array to a compressed texture stored in an array
     async compressTexture(raw, width, height) { 
+        let output = [];
+
+        // Using ycbcr instead of RBG makes the dct compression more efficient
+        function RGBtoYCBCR(r, g, b) {
+            let y = 16 + (0.257*r) + (0.504*g) + (0.098*b);
+            let cb = 128 + (-0.148*r) + (-0.291*g) + (0.439*b);
+            let cr = 128 + (0.439*r) + (-0.368*g) + (-0.071*b);
+            return [
+                Math.round(y),
+                Math.round(cb),
+                Math.round(cr)
+            ]
+        }
+
+        // The raw channel data. The raw RGBA data will be converted to YCBCR and separated into channels and stored here
+        let channels = [
+            // Any of these can be replaced with null to omit the channel
+            new Array(), // The Y (luminance) channel of YCBCR
+            new Array(), // The Cb color channel of YCBCR
+            new Array(), // The Cr color channel of YCBCR
+            null // Transparency
+        ]
+
+        // Convert RGB(a) values to YCBCR and separate first
+        for (let p=0; p<raw.length; p+=4) {
+            let pixel_rgb = raw.slice(p, p+3); // Get RGB
+            let alpha = p+4;
+            let pixel_ycbcr = RGBtoYCBCR(...pixel_rgb);
+
+            // If an individual channel is to be ignored or omitted, it will not appear in the channels object and will be excluded from the output
+
+            if (channels[0] !== null) {
+                channels[0].push(pixel_ycbcr[0])
+            }
+
+            if (channels[1] !== null) {
+                channels[1].push(pixel_ycbcr[1])
+            }
+
+            if (channels[2] !== null) {
+                channels[2].push(pixel_ycbcr[2])
+            }
+
+            if (channels[3] !== null) {
+                channels[3].push(alpha)
+            }
+        }
+
 
         // Takes an array of coefficients from the DCT algorithm and compresses it using a simple algorithm
         function compressCoefficients(coefficients) {
@@ -229,19 +277,18 @@ export class DCTEncoder {
             return output
         }
 
-
-        let data_arr = [];
-
-        // Gets the value of a channel (R,G,B,A..., 0,1,2,3...) from a pixel in the flat array representing the texture
-        function getPixelChannelFromFlattened(x, y, width, channel, channels=4) {
-            let start = (y*(width*channels))+(x*channels)
-            return raw[start+channel]
-        }
-
         const startTime = performance.now()
+
+        console.log(channels)
 
         let blocks_iterated = 0;
         for (let channel=0; channel<4; channel++) {
+            if (channels[channel] === null) {
+                output.push(null)
+                continue
+            }
+
+            output.push(new Array())
 
             for (let chunk_x=0; chunk_x<width; chunk_x+=8) {
                 for (let chunk_y=0; chunk_y<height; chunk_y+=8) {
@@ -251,30 +298,27 @@ export class DCTEncoder {
 
                     for (let chunk_px_x=0; chunk_px_x<8; chunk_px_x++) {
                         for (let chunk_px_y=0; chunk_px_y<8; chunk_px_y++) {
-                            // The texture data is flattened, so find from x and y
-                            let channel_val = getPixelChannelFromFlattened(
-                                chunk_x+chunk_px_x, 
-                                chunk_y+chunk_px_y, 
-                                width,
-                                channel,
-                                4
-                            );
+                            // The channel data is flattened, so the index corresponding pixel location is calculated like this
+                            let px = chunk_x+chunk_px_x;
+                            let py = chunk_y+chunk_px_y;
+                            let index = (py*width)+(px)                            
 
-                            chunk_data[(chunk_px_x*8)+chunk_px_y] = channel_val
+                            // Insert it into the chunk data
+                            chunk_data[(chunk_px_x*8)+chunk_px_y] = channels[channel][index]
                         }
                     }
 
                     // Now compress the chunk with Discrete Cosine Transform (DCT)
                     let dct = this.compressDCT(chunk_data, 8, 8)
-                    // The prevous step doesn't actually compress the data, it just makes this next step easier
+                    // The prevous step doesn't actually compress the data, it just makes this next step more efficient
                     let compressed_coeffs = compressCoefficients(dct);
 
                     // Length of compressed chunk
-                    data_arr.push(compressed_coeffs.length)
+                    output[channel].push(compressed_coeffs.length)
 
                     // Write compressed chunk data
                     for (let b of compressed_coeffs) {
-                        data_arr.push(b)
+                        output[channel].push(b)
                     }
 
                     blocks_iterated++
@@ -293,7 +337,7 @@ export class DCTEncoder {
         const endTime = performance.now()
         console.log(`Texture compression ${endTime - startTime} ms`)
 
-        return data_arr
+        return output
     }
 
 
@@ -349,7 +393,7 @@ export class DCTEncoder {
         return decompressed
     }
 
-    async decompressTexture(compressed, width, height) {
+    async decompressTexture(compressed_channels, width, height) {
 
         // Reverse of compressCoefficients
         function decompressCoefficients(compressed) {
@@ -383,19 +427,20 @@ export class DCTEncoder {
         }
 
 
-        let bh = new ByteHandler(compressed)
-
         // Texture data (split into compressed blocks)
         let texture_data = new Uint8Array(new ArrayBuffer(width*height*4))
 
-        // Sets the value of a channel (R,G,B,A..., 0,1,2,3...) of a pixel in a flattened array representing a texture
-        function setPixelChannelFromFlattened(value, x, y, width, channel, channels=4) {
-            let start = (y*(width*channels))+(x*channels)
-            texture_data[start+channel] = value
-        }
-
         let blocks_iterated = 0;
+        let channel_index = 0;
         for (let channel=0; channel<4; channel++) {
+            if (compressed_channels[channel] === null) {
+                continue
+            }
+
+            console.log(compressed_channels)
+
+            let bh = new ByteHandler(compressed_channels[channel])
+
             for (let block_x=0; block_x<width; block_x+=8) {
                 for (let block_y=0; block_y<height; block_y+=8) {
 
@@ -404,15 +449,18 @@ export class DCTEncoder {
                     let decompressed_block = this.decompressDCT(decompressed_coeffs);
                     //console.log(decompressed_block)
                     for (let b=0; b<decompressed_block.length; b++) {
+                        // Calculate the location of the pixel within the block from the byte index like this
                         let block_px_x = b % 8;
                         let block_px_y = Math.floor(b/8);
-                        
-                        setPixelChannelFromFlattened(
-                            decompressed_block[b], 
-                            (block_x+block_px_x), 
-                            (block_y+block_px_y), 
-                            width, channel, 4
-                        )
+
+                        // Pixel location within whole image, not just its block
+                        let px = block_x+block_px_x;
+                        let py = block_y+block_px_y;
+
+                        let value = decompressed_block[b];
+
+                        let start_index = (py*(width*4))+(px*4)
+                        texture_data[start_index+channel_index] = value
                     }
 
                     blocks_iterated++
@@ -424,6 +472,49 @@ export class DCTEncoder {
                 }                
             }
 
+            channel_index++
+        }
+
+
+
+
+
+        function YCBCRtoRGB(y, cb, cr) {
+            let r = 1.164*(y-16) + 1.596*(cr-128)
+            let g = 1.164*(y-16) + -0.392*(cb-128) + -0.812*(cr-128);
+            let b = 1.164*(y-16) + 2.017*(cb-128)
+
+            return [ // Clamp and round. Looks a tad shit innit
+                Math.min(Math.max(Math.round(r), 0), 255),
+                Math.min(Math.max(Math.round(g), 0), 255),
+                Math.min(Math.max(Math.round(b), 0), 255)
+            ]
+        }
+
+        //console.log(compressed_channels)
+        let default_channel_values = [128, 128, 128, 255]
+
+        // Convert YCBCR back to RGB
+        for (let p=0; p<texture_data.length; p+=4) {
+            let pixel = texture_data.slice(p, p+4);
+
+            // Iterate over all color channels
+            for (let c=0; c<4; c++) {
+                if (compressed_channels[c] === null) { // If the channel is empty, use default value for that channel
+                    pixel[c] = default_channel_values[c]
+                }
+            }
+
+            let pixel_rgb = YCBCRtoRGB(pixel[0], pixel[1], pixel[2]);
+            let alpha = pixel[3];
+            
+
+            //console.log(pixel)
+
+            texture_data[p+0] = pixel_rgb[0]
+            texture_data[p+1] = pixel_rgb[1]
+            texture_data[p+2] = pixel_rgb[2]
+            texture_data[p+3] = alpha
         }
 
         closeProgressBar()
@@ -431,10 +522,6 @@ export class DCTEncoder {
         return texture_data
     }
 }
-
-
-
-
 
 
 
@@ -489,62 +576,64 @@ export class World {
         this.dct_encoder = new DCTEncoder()
 
 
-        this.objects = {};
-        this.materials = {};
-
         this.title = "Unnamed Kodiak Project"
         this.version = 2
 
         this.objects = {};
-
         this.materials = [];
         this.models = [];
 
+        this.script = new KScript(this);
+
         //console.log(this.materials)
 
-        // Preload primitives
-        await this.importModelByURL("/kodiak/assets/models/primitives/box.obj", "Box");
         if (true) {
-            await this.importModelByURL("/kodiak/assets/models/primitives/wedge.obj", "Wedge");
-            await this.importModelByURL("/kodiak/assets/models/primitives/pyramid.obj", "Pyramid");
-            await this.importModelByURL("/kodiak/assets/models/primitives/plane.obj", "Plane");
-            await this.importModelByURL("/kodiak/assets/models/primitives/sphere.obj", "Sphere");
-            await this.importModelByURL("/kodiak/assets/models/primitives/cylinder.obj", "Cylinder");
-            await this.importModelByURL("/kodiak/assets/models/primitives/cone.obj", "Cone");
-            await this.importModelByURL("/kodiak/assets/models/primitives/circle.obj", "Circle");
-    
-            await this.importModelByURL("/kodiak/assets/models/special/donut.obj", "Donut");
-            await this.importModelByURL("/kodiak/assets/models/special/skybox.obj", "Skybox");
-            await this.importModelByURL("/kodiak/assets/models/special/decimated.obj", "Terrain");
-        }
-
-        // Preload default textures (remove later)
-        //await this.importMaterialByURL("/kodiak/assets/textures/sunset.png", "Sky");
-        //this.materials[0].stretch = true
-        //this.materials[0].shading = false
-        await this.importMaterialByURL("/kodiak/assets/textures/plain_color_tile.png", "PlainColorTile");
-        await this.importMaterialByURL("/kodiak/assets/textures/alpha_test.png", "AlphaTest");
-
+            // Preload primitives
+            await this.importModelByURL("/kodiak/assets/models/primitives/box.obj", "Box");
+            if (true) {
+                await this.importModelByURL("/kodiak/assets/models/primitives/wedge.obj", "Wedge");
+                await this.importModelByURL("/kodiak/assets/models/primitives/pyramid.obj", "Pyramid");
+                await this.importModelByURL("/kodiak/assets/models/primitives/plane.obj", "Plane");
+                await this.importModelByURL("/kodiak/assets/models/primitives/sphere.obj", "Sphere");
+                await this.importModelByURL("/kodiak/assets/models/primitives/cylinder.obj", "Cylinder");
+                await this.importModelByURL("/kodiak/assets/models/primitives/cone.obj", "Cone");
+                await this.importModelByURL("/kodiak/assets/models/primitives/circle.obj", "Circle");
         
+                await this.importModelByURL("/kodiak/assets/models/special/donut.obj", "Donut");
+                //await this.importModelByURL("/kodiak/assets/models/special/skybox.obj", "Skybox");
+                //await this.importModelByURL("/kodiak/assets/models/special/decimated.obj", "Terrain");
+            }
 
-        // Temporary stuff
-        let terrain = this.newObject()
-        await this.setModel(terrain.object_id, 10)
-        await this.setMaterial(terrain.object_id, 0)
-        terrain.scale.x = 2048
-        terrain.scale.y = 64
-        terrain.scale.z = 2048
-        this.updateUVs(terrain.object_id)
-        console.log(terrain.object_id, this.objects)
+            // Preload default textures (remove later)
+            //await this.importMaterialByURL("/kodiak/assets/textures/sunset.png", "Sky");
+            //this.materials[0].stretch = true
+            //this.materials[0].shading = false
+            await this.importMaterialByURL("/kodiak/assets/textures/plain_color_tile.png", "PlainColorTile");
+            await this.importMaterialByURL("/kodiak/assets/textures/alpha_test.png", "AlphaTest");
+            await this.importMaterialByURL("/kodiak/assets/textures/color_test.png", "ColorTest");
 
-        let person_size_ref = this.newObject()
-        await this.setModel(person_size_ref.object_id, 0)
-        await this.setMaterial(person_size_ref.object_id, 0)
-        person_size_ref.scale.x = .8
-        person_size_ref.scale.y = 1.8
-        person_size_ref.scale.z = .8
-        this.updateUVs(person_size_ref.object_id)
-        console.log(person_size_ref.object_id, this.objects)
+            
+
+            // Temporary stuff
+            let terrain = this.newObject()
+            await this.setModel(terrain.object_id, 0) // 10
+            await this.setMaterial(terrain.object_id, 0)
+            terrain.scale.x = 2048
+            terrain.scale.y = 64
+            terrain.scale.z = 2048
+            terrain.position.y = -40 //
+            this.updateUVs(terrain.object_id)
+            console.log(terrain.object_id, this.objects)
+
+            let person_size_ref = this.newObject()
+            await this.setModel(person_size_ref.object_id, 0)
+            await this.setMaterial(person_size_ref.object_id, 0)
+            person_size_ref.scale.x = .8
+            person_size_ref.scale.y = 1.8
+            person_size_ref.scale.z = .8
+            this.updateUVs(person_size_ref.object_id)
+            console.log(person_size_ref.object_id, this.objects)
+        }
     }
 
     // Creates a new Kodiak model (not threejs mesh/object) from an imported OBJ
@@ -573,17 +662,34 @@ export class World {
         let uv_coords = [];
         let norms = [];
 
+        // How far the furthest point is on each axis and direction
+        let boundaries_positive = [0, 0, 0];
+        let boundaries_negative = [0, 0, 0];
+
         let lines_iterated = 0;
         let lines = raw.split("\n");
         for (let line of lines) {
             let segments = line.split(" ");
             let line_type = segments[0];
             if (line_type == "v") {
-                points.push([
+                let position = [
                     parseFloat(segments[1]), 
                     parseFloat(segments[2]), 
                     parseFloat(segments[3])
-                ])
+                ]
+
+                points.push(position)
+
+                // If point is further than any previous point from the origin, update furthest
+                for (let a=0; a<3; a++) {
+                    if (boundaries_positive[a] < position[a]) {
+                        boundaries_positive[a] = position[a]
+                    }
+
+                    if (boundaries_negative[a] > position[a]) {
+                        boundaries_negative[a] = position[a]
+                    }
+                }
             } 
             
             if (line_type == "vn") {
@@ -617,6 +723,24 @@ export class World {
 
             lines_iterated++;
             updateProgress("Importing OBJ", "lines", lines_iterated, lines.length)
+        }
+
+        // If there are points outside of the 1x1x1 area, the model may need to be scaled
+        let scale = [];
+        let offset = [];
+        for (let a=0; a<3; a++) { // Calculate how much vertices should be scaled to stay in the 1x1x1 area
+            let boundary_size = (boundaries_positive[a] - boundaries_negative[a]) // How much space between the furthest vertices in opposite directions on this axis
+            let boundary_center = (boundaries_negative[a] + boundaries_positive[a]) / 2 // The average of the two will be the center on that axis. That's how much the mesh will be offset
+            scale.push(1/boundary_size)
+            offset.push(boundary_center)
+        }
+
+        // Scale vertices
+        for (let a=0; a<3; a++) {
+            for (let point of points) {
+                point[a] -= offset[a]
+                point[a] *= scale[a]
+            }
         }
 
         console.log(`Obj model "${model_name}" loaded`)
@@ -747,6 +871,7 @@ export class World {
             //mat_clone.color = new THREE.Color(object.tint[0]/255, object.tint[1]/255, object.tint[2]/255)
 
             object.material = mat_clone
+            object.material_id = material_id
 
             await this.updateUVs(object_id)
         } else {
@@ -823,7 +948,11 @@ export class World {
 
     // Creates an object and returns it
     newObject() {
-        let object_id = generateRandomID();
+        let object_id = 0;
+
+        while (object_id in this.objects) {
+            object_id++
+        }
 
         let object = new THREE.Mesh();
         object.is_object = true;
@@ -831,8 +960,8 @@ export class World {
         this.scene.add(object);
 
         // Kodiak tags
-        object.material_id = 0
         object.model_id = 0
+        object.uv_offset = [0, 0]
         object.uv_scale = [1, 1]
         object.auto_uv_scale = true
 
@@ -845,12 +974,15 @@ export class World {
     async cloneObject(object_id) {
         let object = this.getObjectByID(object_id);
 
-        console.log(generateRandomID())
-
         if (object) {
-            //let clone_id = generateRandomID();
-            //this.objects[clone_id] = structuredClone(object);
-            //this.manifest(clone_id);
+            let new_object = this.newObject()
+
+            new_object.position.copy(object.position)
+            new_object.rotation.copy(object.rotation)
+            new_object.scale.copy(object.scale)
+
+            await this.setModel(new_object.object_id, object.model_id)
+            await this.setMaterial(new_object.object_id, object.material_id)
         } else {
             console.warn("[Clone object] No object was supplied or found.")
         }
@@ -868,7 +1000,7 @@ export class World {
         }
     }
 
-    // Stretches the UVs of a cube to match its scale
+    // Updates UVs of mesh to either match the original UVs or scale them to match the scale of the object
     async updateUVs(object_id) {
         let object = this.objects[object_id];
         if (object) {
@@ -885,6 +1017,9 @@ export class World {
                     let norm = vert[1];
                     let uv = vert[2];
 
+                    let offset_uv_u = uv[0] + object.uv_offset[0]
+                    let offset_uv_v = uv[1] + object.uv_offset[1]
+
                     if (object.auto_uv_scale) {        
                         let max_norm = Math.max( // With this we can find the most "extreme" value, or the direction the normal most closely faces
                             Math.abs(norm[0]), 
@@ -894,22 +1029,22 @@ export class World {
     
                         if (Math.abs(norm[1]) === max_norm) { // If the vertex normal is non-zero on the y axis, we can assume it is upward / downward facing and can be scaled on the x and z axes
                             //console.log(vert_index, object.scale[0])
-                            object.geometry.attributes.uv.array[vert_index*2] = uv[0] * (object.scale.x/object.uv_scale[0])
-                            object.geometry.attributes.uv.array[(vert_index*2)+1] = uv[1] * (object.scale.z/object.uv_scale[1])
+                            object.geometry.attributes.uv.array[vert_index*2] = offset_uv_u * (object.scale.x/object.uv_scale[0])
+                            object.geometry.attributes.uv.array[(vert_index*2)+1] = offset_uv_v * (object.scale.z/object.uv_scale[1])
                         }
                         if (Math.abs(norm[0]) === max_norm) { //
                             //console.log(vert_index, object.scale[0])
-                            object.geometry.attributes.uv.array[vert_index*2] = uv[0] * (object.scale.z/object.uv_scale[0])
-                            object.geometry.attributes.uv.array[(vert_index*2)+1] = uv[1] * (object.scale.y/object.uv_scale[1])
+                            object.geometry.attributes.uv.array[vert_index*2] = offset_uv_u * (object.scale.z/object.uv_scale[0])
+                            object.geometry.attributes.uv.array[(vert_index*2)+1] = offset_uv_v * (object.scale.y/object.uv_scale[1])
                         }
                         if (Math.abs(norm[2]) === max_norm) { //
                             //console.log(vert_index, object.scale[0])
-                            object.geometry.attributes.uv.array[vert_index*2] = uv[0] * (object.scale.x/object.uv_scale[0])
-                            object.geometry.attributes.uv.array[(vert_index*2)+1] = uv[1] * (object.scale.y/object.uv_scale[1])
+                            object.geometry.attributes.uv.array[vert_index*2] = offset_uv_u * (object.scale.x/object.uv_scale[0])
+                            object.geometry.attributes.uv.array[(vert_index*2)+1] = offset_uv_v * (object.scale.y/object.uv_scale[1])
                         }
                     } else {
-                        object.geometry.attributes.uv.array[vert_index*2] = uv[0] * object.uv_scale[0]
-                        object.geometry.attributes.uv.array[(vert_index*2)+1] = uv[1] * object.uv_scale[1]
+                        object.geometry.attributes.uv.array[vert_index*2] = offset_uv_u * object.uv_scale[0]
+                        object.geometry.attributes.uv.array[(vert_index*2)+1] = offset_uv_v * object.uv_scale[1]
                     }
 
                     vert_index++;
@@ -1121,21 +1256,20 @@ export class World {
             // Resolution of textures (max res is a 65k by 65k image, which would be 16 gigabytes uncompressed... I wont even bother adding a resolution check because who the hell uploads a 16 GB texture?
             data_arr.push(...encode_uint(2, material.map.width))
             data_arr.push(...encode_uint(2, material.map.height))
-
-            // Pixel channel ranges
-            // 1 channel = greyscale
-            // 3 channels = RGB
-            // 4 channels = RGBA
-            // 5 channels = RGBA with roughness map
-            // 6 channels = RGBA with rough map and bump/height map
-            data_arr.push(4)
             
-            // The textures are pre-compressed, so they can just be added to the file as is
-
-            // Total length of texture in bytes
-            data_arr.push(...encode_uint(3, material.map.pre_compressed.length))
-            // The texture data itself (too much data to push)
-            data_arr = data_arr.concat(material.map.pre_compressed)
+            // The textures are pre-compressed and separated into their color channels (Y, Cb, Cr, Alpha (Not RGBA)) so they can just be added to the file as is
+            for (let c=0; c<4; c++) {
+                // The reader will expect a byte equal to the length of the compressed channel data. There will be 4 sections for each channel.
+                // The byte should be 0 if the channel is not included in the texture (common for greyscale textures or textures without transparency)
+                if (material.map.pre_compressed[c] === null) {
+                    data_arr.push(...encode_uint(3, 0)) // This is inefficient and should probably be replaced at some point
+                } else {
+                    // Length of channel data in bytes
+                    data_arr.push(...encode_uint(3, material.map.pre_compressed[c].length))
+                    // If there is any, add the texture data itself (too much data to push)
+                    data_arr = data_arr.concat(material.map.pre_compressed[c])
+                }                
+            }
         }
 
 
@@ -1166,6 +1300,10 @@ export class World {
             data_arr.push(object.model_id);
             data_arr.push(object.material_id);
 
+            // UV offset (0 to 1 expanded to 0 to 255^2)
+            data_arr.push(...encode_custom_range(object.uv_offset[0], 0, 1, 2)) // u / x
+            data_arr.push(...encode_custom_range(object.uv_offset[0], 0, 1, 2)) // v / y
+
             // UV scale (up to 255^2 times the original to 1/255^2)
             data_arr.push(...encode_num(object.uv_scale[0])) // u / x
             data_arr.push(...encode_num(object.uv_scale[1])) // v / y
@@ -1177,7 +1315,7 @@ export class World {
             data_arr.push(255) // Add alpha later
 
             // UV auto scaling
-            if (object.uv_auto_scale) { // 0 or 255 will be used for boolean values. Not efficent but we're dealing with uint8s, not bit by bit.
+            if (object.auto_uv_scale) { // 0 or 255 will be used for boolean values. Not efficent but we're dealing with uint8s, not bit by bit.
                 data_arr.push(255)
             } else {
                 data_arr.push(0)
@@ -1243,7 +1381,14 @@ export class World {
         }
 
 
-        
+        // Clear everything first
+        console.log(this.objects)
+        for (let object_id in this.objects) {
+            this.scene.remove(this.objects[object_id])
+        }
+        this.objects = {}
+        this.materials = []
+        this.models = []
 
 
         // Title, obviously
@@ -1329,21 +1474,26 @@ export class World {
 
             let material = this.newMaterial(material_name)
 
-            // Texrure resolution
+            // Texrure resolution // I've decided to leave this typo here as an indicator that I am in fact not a clanker
             let tex_resolution_x = decode_uint(bh.next_bytes(2))
             let tex_resolution_y = decode_uint(bh.next_bytes(2))
 
-            // Number of channels from 1 to 6, greyscale to RGBA with material maps (details in encoder)
-            let num_channels = bh.next_byte()
+            let texture_data = [];
 
-            let texture_size = decode_uint(bh.next_bytes(3))
+            // Each texture is separated into sections of each of its color channels (Y, Cb, Cr, Alpha (NOT RGBA))
+            for (let c=0; c<4; c++) {
+                // Each section sould have bytes at the beginning indicating the length of the data for that channel
+                let channel_data_size = decode_uint(bh.next_bytes(3))
 
-            // Texture data (decompressed later when texture is loaded)
-            let texture_data = bh.next_bytes(texture_size)
-
-            //for (let b=0; b<(tex_resolution_x*tex_resolution_y*4); b++) {
-            //    texture_data[b] = bh.next_byte()
-            //}
+                // If the length is 0, the channel is not included in the texture and should be omitted
+                if (channel_data_size === 0) {
+                    texture_data.push(null) // Null indicates an unused channel
+                } else {
+                    // If there is data for that channel, it should follow immediately after the length byte
+                    let channel_data = bh.next_bytes(channel_data_size)
+                    texture_data.push(channel_data)
+                }
+            }
 
             await this.setMaterialTexture(material, texture_data, tex_resolution_x, tex_resolution_y)
         }
@@ -1378,6 +1528,9 @@ export class World {
 
             await this.setModel(new_object.object_id, bh.next_byte())
             await this.setMaterial(new_object.object_id, bh.next_byte())
+
+            new_object.uv_offset[0] = decode_custom_range(bh.next_bytes(2), 0, 1)
+            new_object.uv_offset[1] = decode_custom_range(bh.next_bytes(2), 0, 1)
 
             new_object.uv_scale[0] = decode_num(bh.next_bytes(4))
             new_object.uv_scale[1] = decode_num(bh.next_bytes(4))

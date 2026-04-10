@@ -14,10 +14,6 @@
 </head>
 <body oncontextmenu="return false;" style="overflow: hidden;">
 	<div style="z-index: 100; position: absolute; font-size: 0; width: 100%; height: 40px;">
-		<button id="play_btn" class="menuButton">
-		Play
-		</button>
-
 		<button id="save_btn" class="menuButton">
 		Save
 		</button>
@@ -37,7 +33,7 @@
 		<button id="new_object_btn" class="menuButton">+ New Object</button>
 
 		<button class="menuButton menuSection">Snap:</button>
-		<textarea class="menuButton" style="width: 50px; padding: 0;" id="snap_input"></textarea>
+		<textarea class="menuButton" style="width: 50px; padding: 0;" id="snap_input">0.01</textarea>
 	</div>
 
 
@@ -53,16 +49,16 @@
 	<div id="model_list_bar" class="sidebar"></div>
 
 	<div id="material_model_config_bar" class="sidebar">
-		<div class="sidebarSection subSection">Right click a material or model to configure it here</div>
+		<div class="sidebar_section subsection">Right click a material or model to configure it here</div>
 	</div>
 
 	<div id="object_config_bar" class="sidebar">
-		<div id="object_id_display" class="sidebarSection"></div>
+		<div id="object_id_display" class="sidebar_section"></div>
 
-		<div class="sidebarSection headerSection">Transform:</div>
+		<div class="sidebar_section headerSection">Transform:</div>
 
-		<div class="sidebarSection">Position:</div>
-		<div class="sidebarSection subSection">
+		<div class="sidebar_section">Position:</div>
+		<div class="sidebar_section subsection">
 		<span>
 			x: <textarea id="input-pos-x" cols="3" rows="1"></textarea>
 			y: <textarea id="input-pos-y" cols="3" rows="1"></textarea>
@@ -70,8 +66,8 @@
 		</span>
 		</div>
 
-		<div class="sidebarSection">Scale:</div>
-		<div class="sidebarSection subSection">
+		<div class="sidebar_section">Scale:</div>
+		<div class="sidebar_section subsection">
 		<span>
 			x: <textarea id="input-scl-x" cols="3" rows="1"></textarea>
 			y: <textarea id="input-scl-y" cols="3" rows="1"></textarea>
@@ -79,8 +75,8 @@
 		</span>
 		</div>
 
-		<div class="sidebarSection">Rotation:</div>
-		<div class="sidebarSection subSection">
+		<div class="sidebar_section">Rotation:</div>
+		<div class="sidebar_section subsection">
 		<span>
 			x: <textarea id="input-ro-x" cols="3" rows="1"></textarea>
 			y: <textarea id="input-ro-y" cols="3" rows="1"></textarea>
@@ -89,10 +85,10 @@
 		</div>
 
 
-		<div class="sidebarSection headerSection">Appearance:</div>
+		<div class="sidebar_section headerSection">Appearance:</div>
 
-		<div class="sidebarSection">Tint:</div>
-		<div class="sidebarSection subSection">
+		<div class="sidebar_section">Tint:</div>
+		<div class="sidebar_section subsection">
 		<span>
 			r: <textarea id="input-tint-r" cols="2" rows="1"></textarea>
 			g: <textarea id="input-tint-g" cols="2" rows="1"></textarea>
@@ -100,6 +96,36 @@
 			a: <textarea id="input-tint-a" cols="2" rows="1"></textarea>
 		</span>
 		</div>
+
+
+		<div class="sidebar_section headerSection">Texture Coordinates:</div>
+
+		<div class="sidebar_section">Scale:</div>
+		<div class="sidebar_section subsection">
+		<span>
+			u: <textarea id="input-uv-scale-u" cols="2" rows="1">1</textarea>
+			v: <textarea id="input-uv-scale-v" cols="2" rows="1">1</textarea>
+			<br>
+			<input type="checkbox" id="input-auto-uv-scale"> Automatic UV scaling
+		</span>
+		</div>
+
+		<div class="sidebar_section">Offset:</div>
+		<div class="sidebar_section subsection">
+		<span>
+			u: <textarea id="input-uv-offset-u" cols="2" rows="1">0</textarea>
+			v: <textarea id="input-uv-offset-v" cols="2" rows="1">0</textarea>
+		</span>
+		</div>
+	</div>
+
+	<div class="sidebar" id="scripting_bar">
+		<div id="script_header">
+			Scripting
+			<button id="scripting-run-button">Run</button>
+		</div>
+		<textarea id="script_text"></textarea>
+		<div id="script_output"></div>
 	</div>
 
 
@@ -112,7 +138,7 @@
 		}
 		}
 	</script>
-	
+
 	<script src="bridge.js"></script>
 	<script type="module" src="editor.js"></script>
 	</body>

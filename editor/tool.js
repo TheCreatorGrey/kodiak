@@ -22,7 +22,7 @@ function mouseCast(world, target, event) {
 
 
 class Draggable {
-    constructor(tool, axis, snap = 1) {
+    constructor(tool, axis, snap = 0.01) {
         this.tool = tool
         this.axis = axis;
         this.snap = snap;
@@ -198,6 +198,20 @@ export class Tool {
             document.getElementById("input-ro-x").value = object.rotation.x / Math.PI / 180
             document.getElementById("input-ro-y").value = object.rotation.y / Math.PI / 180
             document.getElementById("input-ro-z").value = object.rotation.z / Math.PI / 180
+
+            document.getElementById("input-tint-r").value = object.material.color.r*255
+            document.getElementById("input-tint-g").value = object.material.color.g*255
+            document.getElementById("input-tint-b").value = object.material.color.b*255
+            document.getElementById("input-tint-a").value = object.material.transparency*255
+
+            document.getElementById("input-uv-scale-u").value = object.uv_scale[0]
+            document.getElementById("input-uv-scale-v").value = object.uv_scale[1]
+
+            document.getElementById("input-auto-uv-scale").checked = object.auto_uv_scale
+
+            document.getElementById("input-uv-offset-u").value = object.uv_offset[0]
+            document.getElementById("input-uv-offset-v").value = object.uv_offset[1]
+
         } else {
             //document.getElementById('sidebar').style.display = 'none';
 

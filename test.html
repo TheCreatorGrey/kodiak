@@ -1,95 +1,38 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
-
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-        <title>Babylon Template</title>
-
-        <style>
-            html, body {
-                overflow: hidden;
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                padding: 0;
-            }
-            #renderCanvas {
-                width: 100%;
-                height: 100%;
-                touch-action: none;
-            }
-        </style>
-
-        <script src="https://cdn.babylonjs.com/babylon.js"></script>
-
-    </head>
-
-   <body>
-
-	<canvas id="renderCanvas"></canvas>
-
-	<script>
-        // Encodes a nonnegative whole number between 0 and 255^2. Returns two bytes
-        function encode_whole_number(num) {
-            let byte1 = Math.floor(num / 255);
-            let byte2 = num % 255
-
-            return [byte1, byte2]
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        // Using ycbcr instead of RBG makes the dct compression more efficient
+        function RGBtoYCBCR(r, g, b) {
+            let y = 16 + (0.257*r) + (0.504*g) + (0.098*b);
+            let cb = 128 + (-0.148*r) + (-0.291*g) + (0.439*b);
+            let cr = 128 + (0.439*r) + (-0.368*g) + (-0.071*b);
+            return [
+                Math.round(y),
+                Math.round(cb),
+                Math.round(cr)
+            ]
         }
 
-        // Encodes a number within a specified range. Precision equal to (most-least)/(255^2)
-        function encode_custom_range(num, least, most) {
-            let value = num
+        function YCBCRtoRGB(y, cb, cr) {
+            let r = 1.164*(y-16) + 1.596*(cr-128)
+            let g = 1.164*(y-16) + -0.392*(cb-128) + -0.812*(cr-128);
+            let b = 1.164*(y-16) + 2.017*(cb-128)
 
-            // Clamp values
-            if (value < (least)) {
-                console.log(`Value ${value} is below minumum ${least}`)
-                value = least
-            }
-            if (value > (most)) {
-                console.log(`Value ${value} is above maximum ${most}`)
-                value = most
-            }
-
-            value -= least // Will offset the value so it will not be below zero (if the value is actually in range)
-            let from_zero_maximum = most-least // The new maximum value after being offset
-
-            // Expand to the supported range of 255^2
-            value *= (Math.pow(255, 2) / from_zero_maximum)
-
-            // Any unsupported precision is rounded off
-            // For this, whole number encoding is used which takes two bytes and can encode any whole number from 0 to 255^2
-            // I could have decided to use the 4 byte encode num which supports even more precision, but this would be excessive
-            // since even a range of 0 to 100 would have a precision of 10/255^2 or ~0.0015. Seems like plenty to me
-            return encode_whole_number(Math.round(value))
+            return [
+                Math.round(r),
+                Math.round(g),
+                Math.round(b)
+            ]
         }
 
-        // Decodes a nonnegative whole number from two bytes
-        function decode_whole_number(byte1, byte2) {
-            return (byte1 * 255) + byte2
-        }
-
-        // Decodes a number within a specified range
-        function decode_custom_range(byte_pair, least, most) {
-            let value = decode_whole_number(byte_pair[0], byte_pair[1])
-            
-            let from_zero_maximum = most-least // The maximum value if the range is offset to be above zero
-
-            // Encoded value is still within the supported range of 256^2
-            // Crunch it back down to the original range
-            value /= (Math.pow(255, 2) / from_zero_maximum)
-
-            value += least // Offset value back to the original minumum
-
-            return value
-        }
-
-        let encoded = encode_custom_range(0.5, -0.5, 0.5)
-        let decoded = decode_custom_range([encoded[0], encoded[1]], -0.5, 0.5)
-
-        console.log(encoded, decoded)
-	</script>
-
-   </body>
-
+        let rgb = [255, 64, 65]
+        console.log(rgb, RGBtoYCBCR(...rgb), YCBCRtoRGB(...RGBtoYCBCR(...rgb)))
+    </script>
+</body>
 </html>
