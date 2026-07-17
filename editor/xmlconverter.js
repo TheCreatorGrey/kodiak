@@ -31,7 +31,7 @@ export async function convertXML(world, filename, onprogress) {
         shape_token.innerHTML = "3"
         props.appendChild(shape_token)
 
-        part.className = "Part"
+        //part.className = "Part"
     }
 
     special_parts = xml.getElementsByClassName("TrussPart");
@@ -43,11 +43,11 @@ export async function convertXML(world, filename, onprogress) {
         shape_token.innerHTML = "1"
         props.appendChild(shape_token)
 
-        part.className = "Part"
+        //part.className = "Part"
     }
 
 
-    let parts = xml.getElementsByClassName("Part");
+    let parts = xml.querySelectorAll(".TrussPart,.WedgePart,.Part");
 
     let parts_iterated = 0;
     for (let part of parts) {
@@ -275,8 +275,16 @@ export async function convertXML(world, filename, onprogress) {
                 shape_token = token
             }
         }
-        let shape_code = shape_token.textContent;
 
+        // Assume the part is block shaped (come back to this)
+        let shape_code;
+        if (shape_token) {
+            shape_code = shape_token.textContent;
+        } else {
+            shape_code = "4"
+            console.log("Missing shape token")
+        }
+        
         let model_name;
         if (shape_code == "0") {
             model_name = "Sphere"
@@ -315,7 +323,8 @@ export async function convertXML(world, filename, onprogress) {
         world.setModel(new_object_id, world.getModelIDByName(model_name))
 
         if (! (material_name in roblox_materials)) {
-            roblox_materials[material_name] = await world.importMaterialByURL(`../3rdparty/roblox/materials/${material_name}/color.png`, `Roblox ${material_name}`, 8);
+            console.log(material_name)
+            roblox_materials[material_name] = await world.importMaterialByURL(`../3rdparty/roblox/materials/${material_name}/color.png`, `Roblox ${material_name}`, 32);
         }
 
         console.log(roblox_materials[material_name])

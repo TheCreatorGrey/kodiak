@@ -212,6 +212,12 @@ export class Tool {
             document.getElementById("input-uv-offset-u").value = object.uv_offset[0]
             document.getElementById("input-uv-offset-v").value = object.uv_offset[1]
 
+
+            // Display script in editor
+            if (this.selected_object_id in this.world.script_handler.scripts) {
+                document.getElementById("script_text").innerText = this.world.script_handler.scripts[this.selected_object_id].script_raw;
+            }
+
         } else {
             //document.getElementById('sidebar').style.display = 'none';
 
@@ -220,6 +226,10 @@ export class Tool {
             }
             this.cursor.visible = false;
             this.selected_object_id = null;
+
+
+            // Clear script editor
+            document.getElementById("script_text").innerText = "";
         }
     }
 

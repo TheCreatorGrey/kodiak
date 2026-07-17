@@ -1,0 +1,90 @@
+*Helicopter script - With KScript V2*
+
+scriptobj: #helicopter;
+newobject: #blade;
+
+getpos: 
+ $helicopter,
+ #origin_x,
+ #origin_y,
+ #origin_z; 
+
+
+*Set blade offset 
+to vertical scale*
+getscale: 
+$helicopter, 
+#n, #bl_offset, #n;
+
+*Divide by 2*
+quotient: 
+ #bl_offset, 
+ $bl_offset, 
+ 2;
+
+sum: *Include width of blade*
+ #bl_offset, 
+ $bl_offset, 
+ 0.05;
+
+sum: *And y pos of object*
+ #bl_offset, 
+ $bl_offset, 
+ $origin_y;
+
+
+*Make the blade a cube*
+setmodel: $blade, 0;
+
+*Give basic material for now*
+setmaterial: $blade, 0;
+settint: $blade, 0, 0, 0;
+
+scale: $blade, 4, 0.1, 0.2;
+
+*MOVE IN A CIRCLE!!!!*
+
+write: #time, 1;
+
+*Iterate time*
+write: #loop_pt, @;
+sum: #time, $time, 0.01; 
+
+*Set wave-x to sin of time, multiply by 8*
+sin: #wavex, $time;
+product: #wavex, $wavex, 8;
+
+*Same thing but cosine and z axis*
+cos: #wavez, $time;
+product: #wavez, $wavez, 8;
+
+*Offset x and z waves by origin*
+sum: #wavex, $wavex, $origin_x;
+sum: #wavez, $wavez, $origin_z;
+
+*Move heli according to wave vars*
+move: 
+ $helicopter, 
+ $wavex, 
+ $origin_y, 
+ $wavez;
+
+*Move blade to same pos, but with offset*
+move: 
+ $blade, 
+ $wavex, 
+ $bl_offset, 
+ $wavez;
+
+*Multiply time and assign to blade_ro, then apply rotation*
+product: #blade_ro, $time, 16;
+rotate: $blade, 0, $blade_ro, 0;
+
+*Rotate heli itself*
+rotate: $helicopter, 0, $time, 0;
+
+*Make sure screen refreshes*
+refresh;
+
+*Go back to loop point*
+jump: $loop_pt;

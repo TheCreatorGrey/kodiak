@@ -19,3 +19,5 @@ Texture compression uses YCBCR instead of RGB; Compressed textures are now 66% t
 Individal channels can be omitted from textures, making storage of greyscale or non-transparent images more efficient
 Loader and saver has been fixed
 Models are now automatically scaled when imported
+
+Fleshed out scripting language

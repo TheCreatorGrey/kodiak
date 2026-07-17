@@ -1,12 +1,40 @@
-export class KScript {
+export class WorldScriptHandler {
     constructor(world) {
         this.world = world;
-        this.running_line = 0
-        this.script = []
-        this.memory = new Array(256); // Memory for the script's variables / memory slots is stored here
+        this.scripts = {};
+    }
 
-        // How many memory slots are taken, starting from 0
-        this.filled_memory_slots = 32; // The first 32 memory slots are reserved for things like camera position, rotation and mouse position, which are updated every time a line executes
+    loadScript(object_id, raw) {
+        // Init if not already
+        if (! (object_id in this.scripts)) {
+            this.scripts[object_id] = new ObjectScript(this.world, object_id);
+        }
+
+        this.scripts[object_id].loadFromText(raw);
+    }
+
+    async updateAll() {
+        for (let s in this.scripts) {
+            await this.scripts[s].executeUntilNextRefresh()
+        }
+    }
+}
+
+export class ObjectScript {
+    constructor(world, object_id) {
+        this.world = world;
+        this.object_id = object_id;
+
+        this.active = false;
+
+        this.script = []; // The script in array form (compiled from string)
+        this.running_line = 0;
+        this.memory = new Array(256); // Memory for the script's variables / memory slots
+        this.filled_memory_slots = 0; // How many memory slots are taken, starting from 0
+
+        this.script_raw = ""; // Containins the original script in string form
+        
+        
 
         this.command_table = {
             refresh: { // A marker that tells the interpreter that it can stop running code and render the next frame. Does not actually do anything when run. Usually used in loops. Every frame it executes line after line until it finds a refresh command (id 0).
@@ -34,6 +62,41 @@ export class KScript {
 
                     {   // Value
                         range:[-128, 127],
+                        memory:1
+                    }
+                ]
+            },
+
+            jump: {
+                id:3,
+                params:[
+                    {   // Value
+                        range:[-128, 127],
+                        memory:1
+                    }
+                ]
+            },
+
+            jumpif: {
+                id:4,
+                params:[
+                    {   // Value
+                        range:[-128, 127],
+                        memory:1
+                    },
+
+                    {   // Condition (0 or above)
+                        range:[0, 1],
+                        memory:1
+                    }
+                ]
+            },
+
+            scriptobj: { // Sets the slots value to the ID of the parent object
+                id:5,
+                params:[
+                    {   // Memory slot number
+                        range:[0, 255],
                         memory:1
                     }
                 ]
@@ -156,6 +219,106 @@ export class KScript {
                 ]
             },
 
+            settint: {
+                id: 37,
+                params:[
+                    { // ID of object
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // r
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // g
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // b
+                        range:[0, 255],
+                        memory:1
+                    }
+                ]
+            },
+
+            getpos: {
+                id: 60,
+                params:[
+                    { // ID of object
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Mem slot for x
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Mem slot for y
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Mem slot for z
+                        range:[0, 255],
+                        memory:1
+                    }
+                ]
+            },
+
+            getscale: {
+                id: 61,
+                params:[
+                    { // ID of object
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Mem slot for x
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Mem slot for y
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Mem slot for z
+                        range:[0, 255],
+                        memory:1
+                    }
+                ]
+            },
+
+            getrot: {
+                id: 62,
+                params:[
+                    { // ID of object
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Mem slot for x
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Mem slot for y
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Mem slot for z
+                        range:[0, 255],
+                        memory:1
+                    }
+                ]
+            },
+
 
 
             sum: { // Sets the value of the memory slot given to the sum of the two following values
@@ -238,7 +401,7 @@ export class KScript {
                 ]
             },
 
-            invert: { // Sets nonzero values to zero and zero values to 1
+            invert: { // Sets above zero values to zero and zero or below values to 1
                 id:132,
                 params:[
                     {   // ID of memory slot
@@ -248,7 +411,7 @@ export class KScript {
                 ]
             },
 
-            compare: { // Sets the value of the memory slot given to 0 if value 1 is greater than value 2, 1 if its the reverse of that, or 2 if there is a match
+            compare: { // Sets the value of the memory slot given to 1 if the value 1 is greater than value 2, or to 0 if not
                 id:133,
                 params:[
                     {   // ID of memory slot
@@ -266,6 +429,130 @@ export class KScript {
                         memory:1
                     }
                 ]
+            },
+
+            match: { // Sets the value of the memory slot given to 1 if the value 1 is the same as value 2, or to 0 if they are different
+                id:134,
+                params:[
+                    {   // ID of memory slot
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    {   // Value 1
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    {   // Value 2
+                        range:[0, 255],
+                        memory:1
+                    }
+                ]
+            },
+
+            sin: {
+                id:135,
+                params:[
+                    {   // ID of memory slot
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    {   // Value
+                        range:[0, 255],
+                        memory:1
+                    }
+                ]
+            },
+
+            cos: {
+                id:136,
+                params:[
+                    {   // ID of memory slot
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    {   // Value
+                        range:[0, 255],
+                        memory:1
+                    }
+                ]
+            },
+
+
+            newmodel: { // Creates an empty model slot and sets the value of the memory slot given to the ID of the new model
+                id: 200,
+                params:[
+                    { // Slot ID
+                        range:[0, 255],
+                        memory: 1
+                    }
+                ]
+            },
+
+            newtri: { // Adds a triangle to a mesh. 0 - 255 are the limits for each axis.
+                id: 201,
+                params:[
+                    { // Mesh ID
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Point 1 x value
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Point 1 y value
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Point 1 z value
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Point 2 x value
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Point 2 y value
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Point 2 z value
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Point 3 x value
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Point 3 y value
+                        range:[0, 255],
+                        memory:1
+                    },
+
+                    { // Point 3 z value
+                        range:[0, 255],
+                        memory:1
+                    }
+                ]
+            },
+
+            vertloc: { // Sets the location of an existing triangle vertex
+                id:202,
+                params:{ // Mesh ID
+                    range:[0, 255],
+                    memory:1
+                },
             }
         }
     }
@@ -298,29 +585,25 @@ export class KScript {
     }
 
     logError(text) {
-        this.log(`Error: ${text}`, "red")
+        this.log(`Error (line ${this.running_line}): ${text}`, "red")
+        this.active = false;
     }
 
     logWarning(text) {
-        this.log(`Warning: ${text}`, "yellow")
+        this.log(`Warning (line ${this.running_line}): ${text}`, "yellow")
     }
 
 
     loadFromText(script) {
-        this.running_line = 0
-        this.script = [] 
+        this.active = true;
+
+        this.script_raw = script;
+
+        this.running_line = 0;
+        this.script = [] ;
 
         // Names / aliases for memory slots. Temporary and not needed after loading
-        let aliases = {
-            camera_x:0, // Pre-assign aliases to data slots reserved for uhh this stuff
-            camera_y:1, // MAKE SURE filled_memory_slots MATCHES THE NUMBER OF PREASSIGNED ALIASES HERE
-            camera_z:2,
-            cam_rotation_x:3,
-            cam_rotation_y:4,
-            cam_rotation_z:5,
-            mouse_x:6,
-            mouse_y:7
-        }
+        let aliases = {};
 
         this.logInfo("Loading script...")
 
@@ -394,6 +677,9 @@ export class KScript {
                         line.push([1, slot_id])
                     }
 
+                } else if (line_param === "@") {
+                    // If a parameter is a single "@", it should be evaluated as the line number
+                    line.push([0, this.script.length])
                 } else {
                     // If there is no tag and only a number, interpret literally as a number
                     // The first number 0 tells the interpreter that this is just a number
@@ -499,137 +785,242 @@ export class KScript {
     }
 
     async executeNextLine() {
-        this.memory[0] = this.world.camera.position.x
-        this.memory[1] = this.world.camera.position.y
-        this.memory[2] = this.world.camera.position.z
-
-        this.memory[3] = this.world.camera.rotation.x
-        this.memory[4] = this.world.camera.rotation.y
-        this.memory[5] = this.world.camera.rotation.z
-
-        this.memory[6] = 0 // Mouse x (add later)
-        this.memory[7] = 0 // Mouse y (add later)
-
-
-        if (this.running_line < this.script.length) {
-            let line = this.script[this.running_line]
-            let command = line[0]
-            let params = line.slice(1)
-    
-            let param_values = []
-            for (let param of params) {
-                param_values.push(this.getParamValue(param))
-            }
-    
-            //console.log(param_values)
-
-            // Remember that refresh (id 0) does not directly run code;
-            // it is a marker that tells the interpreter that
-            // it can stop running code and render the next frame. All
-            // Code still remaining will be put off to the next frame.
-    
-            if (command === 1) { // log
-                console.log(param_values, "log")
-                this.log(param_values[0], "white")
-            }
-
-            if (command === 2) { // write
-                console.log(param_values, "write")
-                this.memory[param_values[0]] = param_values[1]
-            }
-
-
-
-            if (command === 16) { // newobject
-                let object = await this.world.newObject()
-                this.memory[param_values[0]] = object.object_id
-            }
-            
-
-            if (command === 32) { // move
-                let object = this.world.getObjectByID(param_values[0])
-                object.position.x = param_values[1]
-                object.position.y = param_values[2]
-                object.position.z = param_values[3]
-            }
-
-            if (command === 33) { // rotate
-                let object = this.world.getObjectByID(param_values[0])
-                //console.log(param_values[0])
-                object.rotation.x = param_values[1]
-                object.rotation.y = param_values[2]
-                object.rotation.z = param_values[3]
-            }
-
-            if (command === 34) { // scale
-                let object = this.world.getObjectByID(param_values[0])
-                //console.log(param_values[0])
-                object.scale.x = param_values[1]
-                object.scale.y = param_values[2]
-                object.scale.z = param_values[3]
-            }
-
-            if (command === 35) { // setmodel
-                let object = this.world.getObjectByID(param_values[0])
-                await this.world.setModel(object.object_id, param_values[1])
-            }
-
-            if (command === 36) { // setmaterial
-                let object = this.world.getObjectByID(param_values[0])
-                await this.world.setMaterial(object.object_id, param_values[1])
-            }
-
-
-            if (command === 128) { // sum
-                this.memory[param_values[0]] = param_values[1] + param_values[2]
-            }
-
-            if (command === 129) { // diff
-                this.memory[param_values[0]] = param_values[1] - param_values[2]
-            }
-            
-            if (command === 130) { // product
-                this.memory[param_values[0]] = param_values[1] * param_values[2]
-            }
-
-            if (command === 131) { // quotient
-                this.memory[param_values[0]] = param_values[1] / param_values[2]
-            }
-
-            if (command === 132) { // invert
-                if (param_values[1] === 0) {
-                    this.memory[param_values[0]] = 1
-                } else {
-                    this.memory[param_values[0]] = 0
+        if (this.active) {    
+            if (this.running_line < this.script.length) {
+                let line = this.script[this.running_line]
+                console.log(this.script, this.running_line)
+                let command = line[0]
+                let params = line.slice(1)
+        
+                let param_values = []
+                for (let param of params) {
+                    param_values.push(this.getParamValue(param))
                 }
-            }
-
-            if (command === 133) { // compare
-                if (param_values[1] < param_values[0]) {
-                    this.memory[param_values[0]] = 0
-                } else if (param_values[1] > param_values[0]) {
-                    this.memory[param_values[0]] = 1
-                } else {
-                    this.memory[param_values[0]] = 2
-                }
-            }
+        
+                //console.log(param_values)
     
-            this.running_line++
+                // Remember that refresh (id 0) does not directly run code;
+                // it is a marker that tells the interpreter that
+                // it can stop running code and render the next frame. All
+                // Code still remaining will be put off to the next frame.
+        
+                if (command === 1) { // log
+                    this.log(param_values[0], "log")
+                }
+    
+                if (command === 2) { // write
+                    this.memory[param_values[0]] = param_values[1]
+                }
+    
+                if (command === 3) { // jump
+                    this.running_line = param_values[0]
+                }
+
+                if (command === 4) { // jumpif
+                    if (0 < param_values[1]) {
+                        this.running_line = param_values[0]
+                    }                    
+                }
+
+                if (command === 5) { // scriptobj
+                    this.memory[param_values[0]] = this.object_id;           
+                }
+    
+    
+    
+                if (command === 16) { // newobject
+                    let object = await this.world.newObject()
+                    this.memory[param_values[0]] = object.object_id
+                }
+                
+    
+                if (command === 32) { // move
+                    let object = this.world.getObjectByID(param_values[0])
+
+                    if (object) {
+                        object.position.x = param_values[1]
+                        object.position.y = param_values[2]
+                        object.position.z = param_values[3]
+                    } else {
+                        this.logError(`Couldn't find object with ID ${param_values[0]}`)
+                    }
+                }
+    
+                if (command === 33) { // rotate
+                    let object = this.world.getObjectByID(param_values[0])
+
+                    if (object) {
+                        object.rotation.x = param_values[1]
+                        object.rotation.y = param_values[2]
+                        object.rotation.z = param_values[3]
+                    } else {
+                        this.logError(`Couldn't find object with ID ${param_values[0]}`)
+                    }                    
+                }
+    
+                if (command === 34) { // scale
+                    let object = this.world.getObjectByID(param_values[0])
+
+                    if (object) {
+                        object.scale.x = param_values[1]
+                        object.scale.y = param_values[2]
+                        object.scale.z = param_values[3]
+                    } else {
+                        this.logError(`Couldn't find object with ID ${param_values[0]}`)
+                    }   
+                }
+    
+                if (command === 35) { // setmodel
+                    let object = this.world.getObjectByID(param_values[0])
+
+                    if (object) {
+                        await this.world.setModel(object.object_id, param_values[1])
+                    } else {
+                        this.logError(`Couldn't find object with ID ${param_values[0]}`)
+                    }                    
+                }
+    
+                if (command === 36) { // setmaterial
+                    let object = this.world.getObjectByID(param_values[0])
+
+                    if (object) {
+                        await this.world.setMaterial(object.object_id, param_values[1])
+                    } else {
+                        this.logError(`Couldn't find object with ID ${param_values[0]}`)
+                    }                    
+                }
+
+                if (command === 37) { // settint
+                    let object = this.world.getObjectByID(param_values[0])
+
+                    if (object) {
+                        object.material.color.r = param_values[1];
+                        object.material.color.g = param_values[2];
+                        object.material.color.b = param_values[3];
+                    } else {
+                        this.logError(`Couldn't find object with ID ${param_values[0]}`)
+                    }                    
+                }
+    
+    
+                if (command === 60) { // getpos
+                    let object = this.world.getObjectByID(param_values[0])
+
+                    if (object) {
+                        this.memory[param_values[1]] = object.position.x;
+                        this.memory[param_values[2]] = object.position.y;
+                        this.memory[param_values[3]] = object.position.z;
+                    } else {
+                        this.logError(`Couldn't find object with ID ${param_values[0]}`)
+                    }
+                }
+
+                if (command === 61) { // getscale
+                    let object = this.world.getObjectByID(param_values[0])
+
+                    if (object) {
+                        this.memory[param_values[1]] = object.scale.x;
+                        this.memory[param_values[2]] = object.scale.y;
+                        this.memory[param_values[3]] = object.scale.z;
+                    } else {
+                        this.logError(`Couldn't find object with ID ${param_values[0]}`)
+                    }
+                }
+
+                if (command === 62) { // getrot
+                    let object = this.world.getObjectByID(param_values[0])
+
+                    if (object) {
+                        this.memory[param_values[1]] = object.rotation.x;
+                        this.memory[param_values[2]] = object.rotation.y;
+                        this.memory[param_values[3]] = object.rotation.z;
+                    } else {
+                        this.logError(`Couldn't find object with ID ${param_values[0]}`)
+                    }
+                }
+    
+    
+                if (command === 128) { // sum
+                    this.memory[param_values[0]] = param_values[1] + param_values[2]
+                }
+    
+                if (command === 129) { // diff
+                    this.memory[param_values[0]] = param_values[1] - param_values[2]
+                }
+                
+                if (command === 130) { // product
+                    this.memory[param_values[0]] = param_values[1] * param_values[2]
+                }
+    
+                if (command === 131) { // quotient
+                    this.memory[param_values[0]] = param_values[1] / param_values[2]
+                }
+    
+                if (command === 132) { // invert
+                    if (param_values[1] <= 0) {
+                        this.memory[param_values[0]] = 1
+                    } else {
+                        this.memory[param_values[0]] = 0
+                    }
+                }
+    
+                if (command === 133) { // compare
+                    if (param_values[2] < param_values[1]) {
+                        this.memory[param_values[0]] = 1
+                    } else {
+                        this.memory[param_values[0]] = 0
+                    }
+                }
+
+                if (command === 134) { // match
+                    if (param_values[1] === param_values[2]) {
+                        this.memory[param_values[0]] = 1
+                    } else {
+                        this.memory[param_values[0]] = 0
+                    }
+                }
+    
+                if (command === 135) { // sin                
+                    this.memory[param_values[0]] = Math.sin(param_values[1])
+                }
+    
+                if (command === 136) { // sin                
+                    this.memory[param_values[0]] = Math.cos(param_values[1])
+                }
+    
+                if (command === 200) { // newtri
+                    let model = this.world.models[param_values[0]]
+    
+                    model.tris.push(
+                        [
+                            [[(param_values[1]/255)-0.5, (param_values[2]/255)-0.5, (param_values[3]/255)-0.5], [0, 1, 0], [0, 0]],
+                            [[(param_values[4]/255)-0.5, (param_values[5]/255)-0.5, (param_values[6]/255)-0.5], [0, 1, 0], [0, 0]],
+                            [[(param_values[7]/255)-0.5, (param_values[8]/255)-0.5, (param_values[9]/255)-0.5], [0, 1, 0], [0, 0]]
+                        ]
+                    )
+    
+                    console.log(model)
+                }
+        
+                this.running_line++
+            }
         }
     }
 
     // Keeps executing lines until there is a skip command (possibility of loop)
     async executeUntilNextRefresh() {
-        if (this.running_line < this.script.length) {
-
-            while (this.running_line < this.script.length) {
-                await this.executeNextLine()
-
-                if (this.script[this.running_line-1][0] === 3) {
-                    this.logInfo("Script finished")
-
-                    break
+        if (this.active) {
+            if (this.running_line < this.script.length) {
+                while (this.running_line < this.script.length) {
+                    await this.executeNextLine()
+    
+                    if (this.script[this.running_line-1][0] === 0) {
+                        break
+                    }
                 }
+            } else {
+                this.logInfo("Script finished");
+                this.active = false;
             }
         }
     }

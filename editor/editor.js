@@ -45,17 +45,6 @@ document.getElementById('fileInput').onchange = function() {
     }
 };
 
-async function requestFile(onload) {
-    file_input.click()
-    file_input_onload = onload
-}
-
-async function importWorld() {
-    requestFile(function(file_content) {
-        world.fromSerial(file_content);
-    })
-}
-
 
 
 
@@ -73,8 +62,7 @@ const script_text = document.getElementById("script_text")
 const scripting_run_button = document.getElementById("scripting-run-button")
 
 scripting_run_button.onclick = () => {
-    world.script.loadFromText(script_text.value)
-    console.log(world.script.script)
+    world.script_handler.loadScript(tool.selected_object_id, script_text.value);
 }
 
 
@@ -106,7 +94,7 @@ async function animate() {
         }
     }
     
-    await world.script.executeUntilNextRefresh()
+    await world.script_handler.updateAll()
 
     tool.update();
     world.renderer.render(world.scene, world.camera);
@@ -121,7 +109,7 @@ async function setup() {
 
     await world.initialize();
 
-    //convertXML(world, "/kodiak/3rdparty/roblox/import_tests/suburb.rbxmx");
+    //convertXML(world, "/kodiak/3rdparty/roblox/import_tests/rbh.rbxmx");
 
     world.renderer.domElement.classList.add("editorCanvas");
 
@@ -149,6 +137,20 @@ async function setup() {
     save_btn.onclick = function () {
         world.serialize();
     };
+
+
+    async function requestFile(onload) {
+        file_input.click()
+        file_input_onload = onload
+    }
+    
+    async function importWorld() {
+        requestFile(async function(file_content) {
+            await world.fromSerial(file_content);
+            refreshMaterialList();
+            refreshModelList();
+        })
+    }
 
     load_btn.onclick = function () {
         importWorld()
@@ -197,49 +199,49 @@ async function setup() {
 
     const input_pos_x = document.getElementById("input-pos-x")
     input_pos_x.onchange = function () {
-        tool.getSelectedObject().position[0] = parseFloat(input_pos_x.value)
+        tool.getSelectedObject().position.x = parseFloat(input_pos_x.value)
     }
 
     const input_pos_y = document.getElementById("input-pos-y")
     input_pos_y.onchange = function () {
-        tool.getSelectedObject().position[1] = parseFloat(input_pos_y.value)
+        tool.getSelectedObject().position.y = parseFloat(input_pos_y.value)
     }
 
     const input_pos_z = document.getElementById("input-pos-x")
     input_pos_z.onchange = function () {
-        tool.getSelectedObject().position[2] = parseFloat(input_pos_z.value)
+        tool.getSelectedObject().position.z = parseFloat(input_pos_z.value)
     }
 
 
     const input_scl_x = document.getElementById("input-scl-x")
     input_scl_x.onchange = function () {
-        tool.getSelectedObject().scale[0] = parseFloat(input_scl_x.value)
+        tool.getSelectedObject().scale.x = parseFloat(input_scl_x.value)
     }
 
     const input_scl_y = document.getElementById("input-scl-y")
     input_scl_y.onchange = function () {
-        tool.getSelectedObject().scale[1] = parseFloat(input_scl_y.value)
+        tool.getSelectedObject().scale.y = parseFloat(input_scl_y.value)
     }
 
     const input_scl_z = document.getElementById("input-scl-z")
     input_scl_z.onchange = function () {
-        tool.getSelectedObject().scale[2] = parseFloat(input_scl_z.value)
+        tool.getSelectedObject().scale.z = parseFloat(input_scl_z.value)
     }
 
 
     const input_ro_x = document.getElementById("input-ro-x")
     input_ro_x.onchange = function () {
-        tool.getSelectedObject().rotation[0] = parseFloat(input_ro_x.value)*Math.PI / 180
+        tool.getSelectedObject().rotation.x = parseFloat(input_ro_x.value)*Math.PI / 180
     }
 
     const input_ro_y = document.getElementById("input-ro-y")
     input_ro_y.onchange = function () {
-        tool.getSelectedObject().rotation[1] = parseFloat(input_ro_y.value)*Math.PI / 180
+        tool.getSelectedObject().rotation.y = parseFloat(input_ro_y.value)*Math.PI / 180
     }
 
     const input_ro_z = document.getElementById("input-ro-z")
     input_ro_z.onchange = function () {
-        tool.getSelectedObject().rotation[2] = parseFloat(input_ro_z.value)*Math.PI / 180
+        tool.getSelectedObject().rotation.z = parseFloat(input_ro_z.value)*Math.PI / 180
     }
 
 

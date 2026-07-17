@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { KScript } from './scripting.js';
+import { WorldScriptHandler } from './scripting.js';
 
 
 // **** Proudly made without the use of generative AI ****
@@ -583,7 +583,7 @@ export class World {
         this.materials = [];
         this.models = [];
 
-        this.script = new KScript(this);
+        this.script_handler = new WorldScriptHandler(this);
 
         //console.log(this.materials)
 
@@ -828,20 +828,25 @@ export class World {
         img_canvas.width = image_obj.width;
         img_canvas.height = image_obj.height;
         let img_ctx = img_canvas.getContext("2d");
-        img_ctx.drawImage(image_obj, 0, 0, image_obj.width/downres, image_obj.height/downres);
+
+        let downres_adj = downres
+        if (image_obj.width < downres) { // Do not scale image below its resolution
+            downres_adj = 1
+        }
+        img_ctx.drawImage(image_obj, 0, 0, image_obj.width/downres_adj, image_obj.height/downres_adj);
         
         // Ok now that I have the image on a canvas I can get the raw pixel data
-        let img_data = img_ctx.getImageData(0, 0, image_obj.width/downres, image_obj.height/downres)
+        let img_data = img_ctx.getImageData(0, 0, image_obj.width/downres_adj, image_obj.height/downres_adj)
 
 
         // I know this seems stupid because it'll just be decompressed later but pre-compressing makes 
         // it so that it doesnt take a long time to save to file
         // also textures will look the same as they would after importing the saved file
-        let pre_compressed = await this.dct_encoder.compressTexture(img_data.data, image_obj.width/downres, image_obj.height/downres)
+        let pre_compressed = await this.dct_encoder.compressTexture(img_data.data, image_obj.width/downres_adj, image_obj.height/downres_adj)
 
         let material = this.newMaterial(material_name)
 
-        await this.setMaterialTexture(material, pre_compressed, image_obj.width/downres, image_obj.height/downres)
+        await this.setMaterialTexture(material, pre_compressed, image_obj.width/downres_adj, image_obj.height/downres_adj)
 
         return material
     }
@@ -980,6 +985,12 @@ export class World {
             new_object.position.copy(object.position)
             new_object.rotation.copy(object.rotation)
             new_object.scale.copy(object.scale)
+
+            new_object.auto_uv_scale = object.auto_uv_scale;
+            new_object.uv_offset[0] = object.uv_offset[0]
+            new_object.uv_offset[1] = object.uv_offset[1]
+            new_object.uv_scale[0] = object.uv_scale[0]
+            new_object.uv_scale[1] = object.uv_scale[1]
 
             await this.setModel(new_object.object_id, object.model_id)
             await this.setMaterial(new_object.object_id, object.material_id)
@@ -1484,6 +1495,7 @@ export class World {
             for (let c=0; c<4; c++) {
                 // Each section sould have bytes at the beginning indicating the length of the data for that channel
                 let channel_data_size = decode_uint(bh.next_bytes(3))
+                console.log(channel_data_size)
 
                 // If the length is 0, the channel is not included in the texture and should be omitted
                 if (channel_data_size === 0) {
